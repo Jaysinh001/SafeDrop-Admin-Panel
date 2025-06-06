@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 class ThemeProvider extends BaseViewModel {
   ThemeMode _themeMode = ThemeMode.light;
-
+  
   ThemeProvider(super.context);
 
   ThemeMode get themeMode => _themeMode;
