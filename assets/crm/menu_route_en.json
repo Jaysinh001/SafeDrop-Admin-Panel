@@ -32,8 +32,22 @@
         "menuName": "Finance",
         "childList": [
           {
-            "menuName": "Transactions",
+            "menuName": "All Transactions",
             "path": "/transactions"
+          }
+        ]
+      },
+      {
+        "icon": "assets/crm/calendar.svg",
+        "menuName": "Withdrawals",
+        "childList": [
+          {
+            "menuName": "All Withdrals",
+            "path": "/withdrawals"
+          },
+          {
+            "menuName": "Pending Withdrals",
+            "path": "/pendingWithdrawals"
           }
         ]
       },

@@ -24,7 +24,7 @@ class ContactListWidget extends TableWidget<ContactListViewModel> {
 
   @override
   // TODO: implement showCheckboxColumn
-  bool get showCheckboxColumn => true;
+  bool get showCheckboxColumn => false;
 
   @override
   // TODO: implement rowHeight

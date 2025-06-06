@@ -52,6 +52,18 @@ final List<Map<String, Object>> MAIN_PAGES = [
       () => contacts.ContactsPage(),
     ),
   },
+
+  // >>>>>>>>>>>>>>>>> Withdrawals Routes <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  {
+    'routerPath': '/withdrawals',
+    'widget': DeferredWidget(account.loadLibrary, () => account.AccountPage()),
+  },
+
+  {
+    'routerPath': '/pendingWithdrawals',
+    'widget': DeferredWidget(account.loadLibrary, () => account.AccountPage()),
+  },
+
   {
     'routerPath': '/account',
     'widget': DeferredWidget(account.loadLibrary, () => account.AccountPage()),

@@ -10,7 +10,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import '../../config/components/card_data_widget.dart';
 
 class CrmHomePage extends CrmLayout {
-  CrmHomePage({super.key});
+  const CrmHomePage({super.key});
 
   @override
   String breakTabTitle(BuildContext context) {
