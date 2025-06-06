@@ -104,6 +104,8 @@ dependencies:
 
   flareline_uikit:
     path: FlareLine-UiKit
+  get: ^4.7.2
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:
