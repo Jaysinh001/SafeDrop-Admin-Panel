@@ -30,18 +30,19 @@ class ButtonWidget extends StatelessWidget {
   final double? height;
   final double? fontSize;
 
-  const ButtonWidget({required this.btnText,
-    this.onTap,
-    this.color,
-    this.borderRadius,
-    this.borderColor,
-    this.textColor,
-    this.iconWidget,
-    this.type,
-    this.borderWidth,
-    this.height,
-    this.fontSize,
-    super.key});
+  const ButtonWidget(
+      {required this.btnText,
+      this.onTap,
+      this.color,
+      this.borderRadius,
+      this.borderColor,
+      this.textColor,
+      this.iconWidget,
+      this.type,
+      this.borderWidth,
+      this.height,
+      this.fontSize,
+      super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +81,8 @@ class ButtonWidget extends StatelessWidget {
         border: (borderColor != null
             ? Border.all(color: borderColor!, width: borderWidth ?? 0)
             : (type == null
-            ? Border.all(color: ButtonColors.normal, width: 1)
-            : null)),
+                ? Border.all(color: ButtonColors.normal, width: 1)
+                : null)),
         color: color ?? getTypeColor(type),
         borderRadius: BorderRadius.circular(borderRadius ?? 4));
   }

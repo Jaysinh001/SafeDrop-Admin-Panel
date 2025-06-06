@@ -11,7 +11,8 @@ class SideMenuWidget extends StatelessWidget {
 
   ValueNotifier<String> expandedMenuName;
 
-  SideMenuWidget({super.key, this.e, this.isDark, required this.expandedMenuName});
+  SideMenuWidget(
+      {super.key, this.e, this.isDark, required this.expandedMenuName});
 
   void setExpandedMenuName(String menuName) {
     if (expandedMenuName.value == menuName) {
@@ -32,10 +33,7 @@ class SideMenuWidget extends StatelessWidget {
       }
     }
 
-    String? routePath = ModalRoute
-        .of(context)
-        ?.settings
-        ?.name;
+    String? routePath = ModalRoute.of(context)?.settings?.name;
     return routePath == path;
   }
 
@@ -60,19 +58,19 @@ class SideMenuWidget extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: isSelected
                   ? (isDark
-                  ? const LinearGradient(
-                begin: Alignment(1.00, -0.03),
-                end: Alignment(-1, 0.03),
-                colors: [Color(0x0C316AFF), Color(0x38306AFF)],
-              )
-                  : const LinearGradient(
-                begin: Alignment(1.00, -0.03),
-                end: Alignment(-1, 0.03),
-                colors: [
-                  FlarelineColors.background,
-                  FlarelineColors.gray
-                ],
-              ))
+                      ? const LinearGradient(
+                          begin: Alignment(1.00, -0.03),
+                          end: Alignment(-1, 0.03),
+                          colors: [Color(0x0C316AFF), Color(0x38306AFF)],
+                        )
+                      : const LinearGradient(
+                          begin: Alignment(1.00, -0.03),
+                          end: Alignment(-1, 0.03),
+                          colors: [
+                            FlarelineColors.background,
+                            FlarelineColors.gray
+                          ],
+                        ))
                   : null,
             ),
             child: Row(
@@ -85,18 +83,18 @@ class SideMenuWidget extends StatelessWidget {
                       width: 18,
                       height: 18,
                       color:
-                      isDark ? Colors.white : FlarelineColors.darkBlackText,
+                          isDark ? Colors.white : FlarelineColors.darkBlackText,
                     ),
                   ),
                 Expanded(
                     child: Text(
-                      itemMenuName,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                          color: isDark
-                              ? Colors.white
-                              : FlarelineColors.darkBlackText),
-                    )),
+                  itemMenuName,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      color: isDark
+                          ? Colors.white
+                          : FlarelineColors.darkBlackText),
+                )),
                 if (childList != null && childList.isNotEmpty)
                   ValueListenableBuilder(
                       valueListenable: expandedMenuName,
@@ -153,11 +151,10 @@ class SideMenuWidget extends StatelessWidget {
           children: [
             Expanded(
                 child: Text(
-                  itemMenuName,
-                  style: TextStyle(
-                      color: isDark ? Colors.white : FlarelineColors
-                          .darkBlackText),
-                )),
+              itemMenuName,
+              style: TextStyle(
+                  color: isDark ? Colors.white : FlarelineColors.darkBlackText),
+            )),
           ],
         ),
       ),
@@ -168,18 +165,13 @@ class SideMenuWidget extends StatelessWidget {
   }
 
   pushOrJump(BuildContext context, e) {
-    if (Scaffold
-        .of(context)
-        .isDrawerOpen) {
+    if (Scaffold.of(context).isDrawerOpen) {
       Scaffold.of(context).closeDrawer();
     }
 
     String path = e['path'];
 
-    String? routePath = ModalRoute
-        .of(context)
-        ?.settings
-        ?.name;
+    String? routePath = ModalRoute.of(context)?.settings?.name;
 
     if (path == routePath) {
       return;

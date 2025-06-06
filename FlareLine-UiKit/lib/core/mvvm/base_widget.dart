@@ -4,8 +4,7 @@ import 'package:flareline_uikit/core/mvvm/base_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-abstract class BaseWidget<VM extends BaseViewModel>
-    extends StatelessWidget {
+abstract class BaseWidget<VM extends BaseViewModel> extends StatelessWidget {
   final Map<String, dynamic>? params;
 
   late VM _mViewMode;

@@ -2,6 +2,7 @@ library flareline_uikit;
 
 import 'dart:async';
 
+
 import 'package:flareline_uikit/core/event/global_event.dart';
 import 'package:flareline_uikit/core/mvvm/bloc/bloc_base_state.dart';
 import 'package:flutter/material.dart';
@@ -21,7 +22,8 @@ abstract class BlocBaseViewModel<S extends BlocBaseState> extends Cubit<S> {
 
   StreamSubscription? _eventBusFn;
 
-  BlocBaseViewModel(BuildContext context, S initialState) : super(initialState) {
+  BlocBaseViewModel(BuildContext context, S initialState)
+      : super(initialState) {
     if (isRegisterEventBus) {
       _registerEventBus(context);
     }

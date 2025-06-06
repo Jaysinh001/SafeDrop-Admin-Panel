@@ -9,7 +9,10 @@ class SelectWidget extends StatelessWidget {
   final TextStyle? textStyle;
 
   SelectWidget(
-      {super.key, required this.selectionList, this.onDropdownChanged, this.textStyle});
+      {super.key,
+      required this.selectionList,
+      this.onDropdownChanged,
+      this.textStyle});
 
   ValueNotifier<String> countryNotifier = ValueNotifier('');
 
@@ -35,7 +38,10 @@ class SelectWidget extends StatelessWidget {
                 items: selectionList.map((String items) {
                   return DropdownMenuItem(
                     value: items,
-                    child: Text(items, style: textStyle,),
+                    child: Text(
+                      items,
+                      style: textStyle,
+                    ),
                   );
                 }).toList(),
                 onChanged: (value) {

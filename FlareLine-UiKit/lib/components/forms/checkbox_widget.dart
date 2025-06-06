@@ -48,7 +48,7 @@ class CheckBoxWidget extends StatelessWidget {
         ),
         onTap: () {
           if (onChanged != null) {
-            onChanged!(!(this.checked??false), value);
+            onChanged!(!(this.checked ?? false), value);
           }
         },
       ),

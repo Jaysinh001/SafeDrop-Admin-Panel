@@ -1,5 +1,6 @@
 library flareline_uikit;
 
+
 import 'package:flareline_uikit/components/card/common_card.dart';
 import 'package:flareline_uikit/components/forms/switch_widget.dart';
 import 'package:flareline_uikit/components/loading/loading.dart';
@@ -29,8 +30,7 @@ enum CellDataType {
   final String type;
 }
 
-abstract class TableWidget<S extends BaseTableProvider>
-    extends BaseWidget<S> {
+abstract class TableWidget<S extends BaseTableProvider> extends BaseWidget<S> {
   TableWidget({super.params, super.key});
 
   /// title

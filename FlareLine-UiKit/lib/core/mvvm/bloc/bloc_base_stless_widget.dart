@@ -1,12 +1,12 @@
 library flareline_uikit;
 
-
 import 'package:flareline_uikit/core/mvvm/bloc/bloc_base_state.dart';
 import 'package:flareline_uikit/core/mvvm/bloc/bloc_base_viewmodel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-abstract class BlocBaseStlessWidget<VM extends BlocBaseViewModel<ST>, ST extends BlocBaseState> extends StatelessWidget {
+abstract class BlocBaseStlessWidget<VM extends BlocBaseViewModel<ST>,
+    ST extends BlocBaseState> extends StatelessWidget {
   final Map<String, dynamic>? params;
 
   late VM _mViewMode;
@@ -28,7 +28,9 @@ abstract class BlocBaseStlessWidget<VM extends BlocBaseViewModel<ST>, ST extends
           buildWhen: (previous, current) => needBuild(previous, current),
           builder: (context, state) {
             VM viewModel = BlocProvider.of<VM>(context);
-            return BlocListener<VM, ST>(listener: blocListener, child:bodyWidget(context, viewModel, state));
+            return BlocListener<VM, ST>(
+                listener: blocListener,
+                child: bodyWidget(context, viewModel, state));
           }),
     );
   }
@@ -39,7 +41,5 @@ abstract class BlocBaseStlessWidget<VM extends BlocBaseViewModel<ST>, ST extends
     return previous.props != current.props;
   }
 
-
-  void blocListener(BuildContext context, ST state) {
-  }
+  void blocListener(BuildContext context, ST state) {}
 }

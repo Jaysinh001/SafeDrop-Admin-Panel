@@ -7,41 +7,33 @@ import 'package:flutter/material.dart';
 enum ModalType { small, medium, large }
 
 class ModalDialog {
-  static show({required BuildContext context,
-    String? title,
-    bool? showTitle = false,
-    bool? showTitleDivider = false,
-    Alignment? titleAlign=Alignment.center,
-    Widget? child,
-    Widget? footer,
-    bool? showFooter,
-    bool? showCancel = true,
-    ModalType modalType = ModalType.large,
-    double? width,
-    GestureTapCallback? onCancelTap,
-    GestureTapCallback? onSaveTap}) {
+  static show(
+      {required BuildContext context,
+      String? title,
+      bool? showTitle = false,
+      bool? showTitleDivider = false,
+      Alignment? titleAlign = Alignment.center,
+      Widget? child,
+      Widget? footer,
+      bool? showFooter,
+      bool? showCancel = true,
+      ModalType modalType = ModalType.large,
+      double? width,
+      GestureTapCallback? onCancelTap,
+      GestureTapCallback? onSaveTap}) {
     if (width == null) {
       if (modalType == ModalType.large) {
-        width = MediaQuery
-            .of(context)
-            .size
-            .width * 0.6;
+        width = MediaQuery.of(context).size.width * 0.6;
       } else if (modalType == ModalType.medium) {
-        width = MediaQuery
-            .of(context)
-            .size
-            .width * 0.4;
+        width = MediaQuery.of(context).size.width * 0.4;
       } else if (modalType == ModalType.small) {
-        width = MediaQuery
-            .of(context)
-            .size
-            .width * 0.28;
+        width = MediaQuery.of(context).size.width * 0.28;
       }
     }
 
     Widget confirmWidget;
 
-    if(showCancel!){
+    if (showCancel!) {
       confirmWidget = SizedBox(
         width: 120,
         child: ButtonWidget(
@@ -50,7 +42,7 @@ class ModalDialog {
           type: ButtonType.primary.type,
         ),
       );
-    }else{
+    } else {
       confirmWidget = Expanded(
         child: ButtonWidget(
           btnText: 'Save',
@@ -82,8 +74,8 @@ class ModalDialog {
                         children: [
                           if (showTitle != null)
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
                               alignment: Alignment.center,
                               height: 50,
                               child: Stack(
@@ -136,15 +128,14 @@ class ModalDialog {
                                     left: 20, right: 20, bottom: 20),
                                 child: Row(
                                   children: [
-                                    if(showCancel!)
-                                      const Spacer(),
-                                    if(showCancel!)
+                                    if (showCancel!) const Spacer(),
+                                    if (showCancel!)
                                       SizedBox(
                                         width: 120,
                                         child: ButtonWidget(
                                           btnText: 'Cancel',
                                           textColor:
-                                          FlarelineColors.darkBlackText,
+                                              FlarelineColors.darkBlackText,
                                           onTap: () {
                                             Navigator.of(context).pop();
                                             if (onCancelTap != null) {
@@ -153,12 +144,11 @@ class ModalDialog {
                                           },
                                         ),
                                       ),
-                                    if(showCancel!)
+                                    if (showCancel!)
                                       const SizedBox(
                                         width: 20,
                                       ),
                                     confirmWidget
-
                                   ],
                                 ),
                               )

@@ -1,9 +1,11 @@
-import 'package:flareline/core/theme/global_colors.dart';
-import 'package:flareline/flutter_gen/app_localizations.dart';
+
 import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+
+import '../../localization/flutter_gen/app_localizations.dart';
+import '../../theme/global_colors.dart';
 
 class BarChartWidget extends StatelessWidget {
   BarChartWidget({super.key});
@@ -25,24 +27,23 @@ class BarChartWidget extends StatelessWidget {
               Text(
                 AppLocalizations.of(context)!.profitThisWeek,
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-              )
+              ),
             ],
           ),
-          const SizedBox(
-            height: 16,
-          ),
+          const SizedBox(height: 16),
           Expanded(
-              child: ChangeNotifierProvider(
-            create: (context) => _BarChartProvider(),
-            builder: (ctx, child) => _buildDefaultLineChart(ctx),
-          ))
+            child: ChangeNotifierProvider(
+              create: (context) => _BarChartProvider(),
+              builder: (ctx, child) => _buildDefaultLineChart(ctx),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildDefaultLineChart(BuildContext context) {
-    bool isDark = Theme.of(context).brightness==Brightness.dark;
+    bool isDark = Theme.of(context).brightness == Brightness.dark;
     return SfCartesianChart(
       plotAreaBorderWidth: 0,
       enableSideBySideSeriesPlacement: true,
@@ -52,23 +53,27 @@ class BarChartWidget extends StatelessWidget {
         majorGridLines: MajorGridLines(width: 0),
       ),
       primaryYAxis: const NumericAxis(
-          axisLine: AxisLine(width: 0),
-          labelFormat: '{value}%',
-          majorTickLines: MajorTickLines(size: 0),
-          majorGridLines: MajorGridLines(width: 1),
-          rangePadding: ChartRangePadding.additional),
+        axisLine: AxisLine(width: 0),
+        labelFormat: '{value}%',
+        majorTickLines: MajorTickLines(size: 0),
+        majorGridLines: MajorGridLines(width: 1),
+        rangePadding: ChartRangePadding.additional,
+      ),
       series: _getDefaultColumnSeries(context),
       tooltipBehavior: TooltipBehavior(
-          enable: true,
-          header: '',
-          canShowMarker: false,
-          textStyle: TextStyle(
-              color: isDark ? GlobalColors.darkBlackText : GlobalColors.gray)),
+        enable: true,
+        header: '',
+        canShowMarker: false,
+        textStyle: TextStyle(
+          color: isDark ? GlobalColors.darkBlackText : GlobalColors.gray,
+        ),
+      ),
     );
   }
 
   List<ColumnSeries<_ChartData, String>> _getDefaultColumnSeries(
-      BuildContext context) {
+    BuildContext context,
+  ) {
     List<_ChartData> chartData =
         context.watch<_BarChartProvider>().chartData ?? [];
 
@@ -79,7 +84,9 @@ class BarChartWidget extends StatelessWidget {
         yValueMapper: (_ChartData sales, _) => sales.y,
         color: Color(0xFFFE8111),
         dataLabelSettings: const DataLabelSettings(
-            isVisible: true, textStyle: TextStyle(fontSize: 10)),
+          isVisible: true,
+          textStyle: TextStyle(fontSize: 10),
+        ),
       ),
       ColumnSeries<_ChartData, String>(
         dataSource: chartData,
@@ -87,8 +94,10 @@ class BarChartWidget extends StatelessWidget {
         xValueMapper: (_ChartData sales, _) => sales.x,
         yValueMapper: (_ChartData sales, _) => sales.y2,
         dataLabelSettings: const DataLabelSettings(
-            isVisible: true, textStyle: TextStyle(fontSize: 10)),
-      )
+          isVisible: true,
+          textStyle: TextStyle(fontSize: 10),
+        ),
+      ),
     ];
   }
 }
@@ -109,7 +118,7 @@ class _BarChartProvider extends ChangeNotifier {
     _ChartData('Thr', 38, 50),
     _ChartData('Fri', 54, 66),
     _ChartData('Sat', 57, 78),
-    _ChartData('Sun', 70, 84)
+    _ChartData('Sun', 70, 84),
   ];
 
   void init() {}

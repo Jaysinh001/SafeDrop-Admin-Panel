@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flareline_uikit/entity/cache_entity.dart';
 import 'package:get_storage/get_storage.dart';
 
@@ -21,7 +20,7 @@ class CacheUtil {
 
   final String cacheKeyPrefix = 'cache_';
 
-  String getCacheKey(String key){
+  String getCacheKey(String key) {
     return '${cacheKeyPrefix}${key}';
   }
 
@@ -37,10 +36,9 @@ class CacheUtil {
   /// If cache contains a value for the [key], returns the value.
   /// If cache does not contains a value for the [key], returns null.
   String? read(String key) {
-
     String? json = _box.read(getCacheKey(key));
 
-    if (json == null||json.isEmpty) {
+    if (json == null || json.isEmpty) {
       return null;
     }
     CacheEntity item = CacheEntity.fromJson(jsonDecode(json));
@@ -58,9 +56,8 @@ class CacheUtil {
   void write(String key, String value, {Duration? expire}) {
     _box.write(
         getCacheKey(key),
-        jsonEncode(CacheEntity.create(value,
-            expire: _setExpiry(expire))
-            .toJson()));
+        jsonEncode(
+            CacheEntity.create(value, expire: _setExpiry(expire)).toJson()));
   }
 
   /// Removes value from cache.
@@ -81,7 +78,6 @@ class CacheUtil {
   bool _isExpired(CacheEntity item) {
     if (item.expire != null &&
         item.expire! < (DateTime.now().millisecondsSinceEpoch)) {
-
       return true;
     }
     return false;

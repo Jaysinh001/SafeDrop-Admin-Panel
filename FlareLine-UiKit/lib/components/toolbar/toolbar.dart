@@ -1,4 +1,6 @@
 library flareline_uikit;
+
+
 import 'package:flareline_uikit/components/badge/anim_badge.dart';
 import 'package:flareline_uikit/components/buttons/button_widget.dart';
 import 'package:flareline_uikit/components/forms/search_widget.dart';
@@ -16,7 +18,8 @@ class ToolBarWidget extends StatelessWidget {
   bool? showChangeTheme;
   final Widget? userInfoWidget;
 
-  ToolBarWidget({super.key, this.showMore, this.showChangeTheme,this.userInfoWidget});
+  ToolBarWidget(
+      {super.key, this.showMore, this.showChangeTheme, this.userInfoWidget});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +82,8 @@ class ToolBarWidget extends StatelessWidget {
                   height: 34,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                      color: FlarelineColors.background, shape: BoxShape.circle),
+                      color: FlarelineColors.background,
+                      shape: BoxShape.circle),
                   child: SvgPicture.asset('assets/toolbar/alarm.svg',
                       width: 18, height: 18)),
               const Align(
@@ -100,7 +104,8 @@ class ToolBarWidget extends StatelessWidget {
                   height: 34,
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
-                      color: FlarelineColors.background, shape: BoxShape.circle),
+                      color: FlarelineColors.background,
+                      shape: BoxShape.circle),
                   child: SvgPicture.asset('assets/toolbar/message.svg',
                       width: 18, height: 18)),
               const Align(
@@ -112,8 +117,7 @@ class ToolBarWidget extends StatelessWidget {
         const SizedBox(
           width: 20,
         ),
-        if(userInfoWidget!=null)
-          userInfoWidget!,
+        if (userInfoWidget != null) userInfoWidget!,
         InkWell(
           child: Container(
             margin: const EdgeInsets.only(left: 6),
@@ -143,9 +147,7 @@ class ToolBarWidget extends StatelessWidget {
                 PopupMenuItem<String>(
                   value: 'value03',
                   child: Text('Settings'),
-                  onTap: () async {
-
-                  },
+                  onTap: () async {},
                 ),
                 PopupMenuItem<String>(
                     enabled: false,
@@ -166,15 +168,15 @@ class ToolBarWidget extends StatelessWidget {
     );
   }
 
-  void onProfileClick(BuildContext context){
+  void onProfileClick(BuildContext context) {
     Navigator.of(context).popAndPushNamed('/profile');
   }
 
-  void onContactClick(BuildContext context){
+  void onContactClick(BuildContext context) {
     Navigator.of(context).popAndPushNamed('/contacts');
   }
 
-  void onSettingClick(BuildContext context){
+  void onSettingClick(BuildContext context) {
     Navigator.of(context).popAndPushNamed('/settings');
   }
 
@@ -206,8 +208,6 @@ class ToolBarWidget extends StatelessWidget {
       }).toList(),
     );
   }
-
-
 }
 
 class ToggleWidget extends StatelessWidget {
@@ -220,8 +220,7 @@ class ToggleWidget extends StatelessWidget {
     bool isDark = context.watch<ThemeProvider>().isDark;
     return InkWell(
       child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 2,horizontal: 3),
-     
+          padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 3),
           decoration: BoxDecoration(
               color: FlarelineColors.background,
               borderRadius: BorderRadius.circular(45)),
@@ -239,7 +238,7 @@ class ToggleWidget extends StatelessWidget {
                         : FlarelineColors.primary),
               ),
               CircleAvatar(
-                 radius: 15,
+                radius: 15,
                 backgroundColor: isDark ? Colors.white : Colors.transparent,
                 child: SvgPicture.asset('assets/toolbar/moon.svg',
                     width: 18,

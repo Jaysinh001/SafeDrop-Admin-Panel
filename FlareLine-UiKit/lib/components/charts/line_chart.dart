@@ -1,3 +1,4 @@
+
 import 'package:flareline_uikit/components/forms/select_widget.dart';
 import 'package:flareline_uikit/core/mvvm/base_viewmodel.dart';
 import 'package:flareline_uikit/core/mvvm/base_widget.dart';
@@ -114,7 +115,7 @@ class LineChartWidget extends BaseWidget<LineChartProvider> {
                         builder: (c, selectedValue, child) {
                           return InkWell(
                               onTap: () {
-                                valueNotifier.value=item;
+                                valueNotifier.value = item;
                                 if (onDropdownChanged != null) {
                                   onDropdownChanged!(item);
                                 }
