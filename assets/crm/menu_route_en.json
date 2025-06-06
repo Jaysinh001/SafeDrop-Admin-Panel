@@ -29,6 +29,16 @@
       },
       {
         "icon": "assets/crm/calendar.svg",
+        "menuName": "Finance",
+        "childList": [
+          {
+            "menuName": "Transactions",
+            "path": "/transactions"
+          }
+        ]
+      },
+      {
+        "icon": "assets/crm/calendar.svg",
         "menuName": "Calendar",
         "childList": [
           {

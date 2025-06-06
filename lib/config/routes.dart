@@ -46,6 +46,13 @@ final List<Map<String, Object>> MAIN_PAGES = [
     ),
   },
   {
+    'routerPath': '/transactions',
+    'widget': DeferredWidget(
+      contacts.loadLibrary,
+      () => contacts.ContactsPage(),
+    ),
+  },
+  {
     'routerPath': '/account',
     'widget': DeferredWidget(account.loadLibrary, () => account.AccountPage()),
   },
