@@ -1,118 +1,42 @@
-import 'package:safedropadminpanel/views/modal/modal_page.dart'
-    deferred as modal;
-import 'package:safedropadminpanel/views/table/contacts_page.dart'
-    deferred as contacts;
-import 'package:safedropadminpanel/views/toast/toast_page.dart'
-    deferred as toast;
-import 'package:safedropadminpanel/views/tools/tools_page.dart'
-    deferred as tools;
-import 'package:flutter/material.dart';
-import 'package:safedropadminpanel/views/alerts/alert_page.dart'
-    deferred as alert;
-import 'package:safedropadminpanel/views/button/button_page.dart'
-    deferred as button;
-import 'package:safedropadminpanel/views/form/form_elements_page.dart'
-    deferred as formElements;
-import 'package:safedropadminpanel/views/form/form_layout_page.dart'
-    deferred as formLayout;
 import 'package:safedropadminpanel/views/auth/sign_in/sign_in_page.dart'
     deferred as signIn;
 import 'package:safedropadminpanel/views/auth/sign_up/sign_up_page.dart'
     deferred as signUp;
-import 'package:safedropadminpanel/views/calendar/calendar_page.dart'
-    deferred as calendar;
-import 'package:safedropadminpanel/views/chart/chart_page.dart'
-    deferred as chart;
-import 'package:safedropadminpanel/views/dashboard/ecommerce_page.dart';
-import 'package:safedropadminpanel/views/inbox/index.dart' deferred as inbox;
-import 'package:safedropadminpanel/views/invoice/invoice_page.dart'
-    deferred as invoice;
-import 'package:safedropadminpanel/views/profile/profile_page.dart'
-    deferred as profile;
-import 'package:safedropadminpanel/views/resetpwd/reset_pwd_page.dart'
-    deferred as resetPwd;
-import 'package:safedropadminpanel/views/setting/settings_page.dart'
-    deferred as settings;
-import 'package:safedropadminpanel/views/table/tables_page.dart'
-    deferred as tables;
+import 'package:safedropadminpanel/views/contacts/contacts_page.dart'
+    deferred as contacts;
+import 'package:safedropadminpanel/views/account/account_page.dart'
+    deferred as account;
+import 'package:safedropadminpanel/views/deals/deals_page.dart'
+    deferred as deals;
+import 'package:safedropadminpanel/views/task/task_page.dart' deferred as task;
+import 'package:safedropadminpanel/views/settings/user_settings_page.dart'
+    deferred as userSettings;
+import 'package:safedropadminpanel/views/integrations/integrations_page.dart'
+    deferred as integrations;
+import 'package:safedropadminpanel/views/report/report_page.dart'
+    deferred as report;
+import 'package:safedropadminpanel/views/calendar/day_calendar_page.dart'
+    deferred as dayCalendar;
+import 'package:safedropadminpanel/views/calendar/week_calendar_page.dart'
+    deferred as weekCalendar;
+import 'package:safedropadminpanel/views/calendar/month_calendar_page.dart'
+    deferred as monthCalendar;
+import 'package:safedropadminpanel/views/home/crm_home_page.dart';
+import 'package:flutter/material.dart';
 
-import '../views/dashboard/ecommerce_page.dart';
 import 'components/deferred_widget.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
 
 final List<Map<String, Object>> MAIN_PAGES = [
-  {'routerPath': '/', 'widget': const EcommercePage()},
-  {
-    'routerPath': '/calendar',
-    'widget': DeferredWidget(
-      calendar.loadLibrary,
-      () => calendar.CalendarPage(),
-    ),
-  },
-  {
-    'routerPath': '/profile',
-    'widget': DeferredWidget(profile.loadLibrary, () => profile.ProfilePage()),
-  },
-  {
-    'routerPath': '/formElements',
-    'widget': DeferredWidget(
-      formElements.loadLibrary,
-      () => formElements.FormElementsPage(),
-    ),
-  },
-  {
-    'routerPath': '/formLayout',
-    'widget': DeferredWidget(
-      formLayout.loadLibrary,
-      () => formLayout.FormLayoutPage(),
-    ),
-  },
+  {'routerPath': '/', 'widget': CrmHomePage()},
   {
     'routerPath': '/signIn',
-    'widget': DeferredWidget(signIn.loadLibrary, () => signIn.SignInWidget()),
+    'widget': DeferredWidget(signIn.loadLibrary, () => signIn.SignInPage()),
   },
   {
     'routerPath': '/signUp',
-    'widget': DeferredWidget(signUp.loadLibrary, () => signUp.SignUpWidget()),
-  },
-  {
-    'routerPath': '/resetPwd',
-    'widget': DeferredWidget(
-      resetPwd.loadLibrary,
-      () => resetPwd.ResetPwdWidget(),
-    ),
-  },
-  {
-    'routerPath': '/invoice',
-    'widget': DeferredWidget(invoice.loadLibrary, () => invoice.InvoicePage()),
-  },
-  {
-    'routerPath': '/inbox',
-    'widget': DeferredWidget(inbox.loadLibrary, () => inbox.InboxWidget()),
-  },
-  {
-    'routerPath': '/tables',
-    'widget': DeferredWidget(tables.loadLibrary, () => tables.TablesPage()),
-  },
-  {
-    'routerPath': '/settings',
-    'widget': DeferredWidget(
-      settings.loadLibrary,
-      () => settings.SettingsPage(),
-    ),
-  },
-  {
-    'routerPath': '/basicChart',
-    'widget': DeferredWidget(chart.loadLibrary, () => chart.ChartPage()),
-  },
-  {
-    'routerPath': '/buttons',
-    'widget': DeferredWidget(button.loadLibrary, () => button.ButtonPage()),
-  },
-  {
-    'routerPath': '/alerts',
-    'widget': DeferredWidget(alert.loadLibrary, () => alert.AlertPage()),
+    'widget': DeferredWidget(signUp.loadLibrary, () => signUp.SignUpPage()),
   },
   {
     'routerPath': '/contacts',
@@ -122,22 +46,61 @@ final List<Map<String, Object>> MAIN_PAGES = [
     ),
   },
   {
-    'routerPath': '/tools',
-    'widget': DeferredWidget(tools.loadLibrary, () => tools.ToolsPage()),
+    'routerPath': '/account',
+    'widget': DeferredWidget(account.loadLibrary, () => account.AccountPage()),
   },
   {
-    'routerPath': '/toast',
-    'widget': DeferredWidget(toast.loadLibrary, () => toast.ToastPage()),
+    'routerPath': '/deals',
+    'widget': DeferredWidget(deals.loadLibrary, () => deals.DealsPage()),
   },
   {
-    'routerPath': '/modal',
-    'widget': DeferredWidget(modal.loadLibrary, () => modal.ModalPage()),
+    'routerPath': '/task',
+    'widget': DeferredWidget(task.loadLibrary, () => task.TasksPage()),
+  },
+  {
+    'routerPath': '/userSettings',
+    'widget': DeferredWidget(
+      userSettings.loadLibrary,
+      () => userSettings.UserSettingsPage(),
+    ),
+  },
+  {
+    'routerPath': '/integrations',
+    'widget': DeferredWidget(
+      integrations.loadLibrary,
+      () => integrations.IntegrationsPage(),
+    ),
+  },
+  {
+    'routerPath': '/report',
+    'widget': DeferredWidget(report.loadLibrary, () => report.ReportPage()),
+  },
+  {
+    'routerPath': '/day',
+    'widget': DeferredWidget(
+      dayCalendar.loadLibrary,
+      () => dayCalendar.DayCalendarPage(),
+    ),
+  },
+  {
+    'routerPath': '/week',
+    'widget': DeferredWidget(
+      weekCalendar.loadLibrary,
+      () => weekCalendar.WeekCalendarPage(),
+    ),
+  },
+  {
+    'routerPath': '/month',
+    'widget': DeferredWidget(
+      monthCalendar.loadLibrary,
+      () => monthCalendar.MonthCalendarPage(),
+    ),
   },
 ];
 
 class RouteConfiguration {
   static final GlobalKey<NavigatorState> navigatorKey =
-      GlobalKey<NavigatorState>(debugLabel: 'Rex');
+      new GlobalKey<NavigatorState>(debugLabel: 'Rex');
 
   static BuildContext? get navigatorContext =>
       navigatorKey.currentState?.context;

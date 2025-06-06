@@ -1,0 +1,82 @@
+[
+  {
+    "groupName": "",
+    "menuList": [
+      {
+        "icon": "assets/crm/dashboard.svg",
+        "menuName": "Dashboard",
+        "path": "/"
+      },
+      {
+        "icon": "assets/crm/contacts.svg",
+        "menuName": "Contacts",
+        "path": "/contacts"
+      },
+      {
+        "icon": "assets/crm/accounts.svg",
+        "menuName": "Accounts",
+        "path": "/account"
+      },
+      {
+        "icon": "assets/crm/deals.svg",
+        "menuName": "Deals",
+        "path": "/deals"
+      },
+      {
+        "icon": "assets/crm/task.svg",
+        "menuName": "Task",
+        "path": "/task"
+      },
+      {
+        "icon": "assets/crm/calendar.svg",
+        "menuName": "Calendar",
+        "childList": [
+          {
+            "menuName": "Day",
+            "path": "/day"
+          },
+          {
+            "menuName": "Week",
+            "path": "/week"
+          },
+          {
+            "menuName": "Month",
+            "path": "/month"
+          }
+        ]
+      },
+      {
+        "icon": "assets/crm/reports.svg",
+        "menuName": "Reports",
+        "childList": [
+          {
+            "menuName": "Report",
+            "path": "/report"
+          }
+        ]
+      },
+      {
+        "icon": "assets/crm/setting.svg",
+        "menuName": "Settings",
+        "childList": [
+          {
+            "menuName": "User Settings",
+            "path": "/userSettings"
+          },
+          {
+            "menuName": "Sign Up",
+            "path": "/signUp"
+          },
+          {
+            "menuName": "Sign In",
+            "path": "/signIn"
+          },
+          {
+            "menuName": "Integrations",
+            "path": "/integrations"
+          }
+        ]
+      }
+    ]
+  }
+]

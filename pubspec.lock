@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.2"
+  faker:
+    dependency: "direct main"
+    description:
+      name: faker
+      sha256: "544c34e9e1d322824156d5a8d451bc1bb778263b892aded24ec7ba77b0706624"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.2.0"
   ffi:
     dependency: transitive
     description:
@@ -237,6 +245,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.2.0"
+  flutter_image_stack:
+    dependency: "direct main"
+    description:
+      name: flutter_image_stack
+      sha256: "601cd6acb0e012aa420c37bb3203e63bd864684809109d12a3a114faa74f9cfb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.7"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -608,12 +624,12 @@ packages:
     dependency: "direct main"
     description:
       name: popover
-      sha256: "6a0928ccdcf12d46b407372b644a0d94400b316d0ee072a19dcef03c2bb88c3f"
+      sha256: "0606f3e10f92fc0459f5c52fd917738c29e7552323b28694d50c2d3312d0e1a2"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.9"
+    version: "0.3.1"
   provider:
-    dependency: "direct main"
+    dependency: transitive
     description:
       name: provider
       sha256: "4abbd070a04e9ddc287673bf5a030c7ca8b685ff70218720abab8b092f53dd84"

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -10,52 +11,33 @@ class GlobalTheme {
   static final Color _lightFocusColor = Colors.black.withOpacity(0.12);
   static final Color _darkFocusColor = Colors.white.withOpacity(0.12);
 
-  static ThemeData lightThemeData = theme(
-    lightColorScheme,
-    _lightFocusColor,
-    lightAppBarTheme,
-    GlobalColors.darkText,
-    lightCardTheme,
-  );
-  static ThemeData darkThemeData = theme(
-    darkColorScheme,
-    _darkFocusColor,
-    darkAppBarThemd,
-    GlobalColors.darkText,
-    darkCardTheme,
-  );
+  static ThemeData lightThemeData = theme(lightColorScheme, _lightFocusColor,
+      lightAppBarTheme, GlobalColors.darkText, lightCardTheme);
+  static ThemeData darkThemeData = theme(darkColorScheme, _darkFocusColor,
+      darkAppBarThemd, GlobalColors.darkText, darkCardTheme);
 
-  static ThemeData theme(
-    ColorScheme colorScheme,
-    Color focusColor,
-    AppBarTheme appBarTheme,
-    Color hintColor,
-    CardTheme cardTheme,
-  ) {
+  static ThemeData theme(ColorScheme colorScheme, Color focusColor,
+      AppBarTheme appBarTheme, Color hintColor, CardTheme cardTheme) {
     return ThemeData(
-      useMaterial3: true,
-      colorScheme: colorScheme,
-      focusColor: focusColor,
-      appBarTheme: appBarTheme,
-      textTheme: _textTheme,
-      hintColor: hintColor,
-      cardTheme: cardTheme,
-    );
+        useMaterial3: true,
+        colorScheme: colorScheme,
+        focusColor: focusColor,
+        appBarTheme: appBarTheme,
+        textTheme: _textTheme,
+        hintColor: hintColor,
+        cardTheme: cardTheme);
   }
 
   static CardTheme lightCardTheme = const CardTheme(
-    margin: EdgeInsets.zero,
-    color: Colors.white,
-    surfaceTintColor: Color(0xFFE2E8F0),
-    shadowColor: Color(0x11000000),
-    elevation: 0,
-  );
+      margin: EdgeInsets.zero,
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 0,);
 
-  static CardTheme darkCardTheme = CardTheme(
+  static CardTheme darkCardTheme = const CardTheme(
     margin: EdgeInsets.zero,
     color: GlobalColors.darkAppBar,
-    surfaceTintColor: GlobalColors.border.withOpacity(0.05),
-    shadowColor: GlobalColors.darkAppBar.withOpacity(0.2),
+    surfaceTintColor: GlobalColors.darkAppBar,
     elevation: 0,
   );
 
@@ -63,9 +45,8 @@ class GlobalTheme {
     backgroundColor: Colors.white,
   );
 
-  static const AppBarTheme darkAppBarThemd = AppBarTheme(
-    backgroundColor: GlobalColors.sideBar,
-  );
+  static const AppBarTheme darkAppBarThemd =
+      AppBarTheme(backgroundColor: GlobalColors.sideBar);
 
   static const ColorScheme lightColorScheme = ColorScheme(
     primary: GlobalColors.primary,
