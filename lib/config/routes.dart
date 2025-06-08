@@ -8,6 +8,7 @@ import 'package:safedropadminpanel/views/account/account_page.dart'
     deferred as account;
 import 'package:safedropadminpanel/views/deals/deals_page.dart'
     deferred as deals;
+import 'package:safedropadminpanel/views/finance/transactions/transactions_page.dart';
 import 'package:safedropadminpanel/views/task/task_page.dart' deferred as task;
 import 'package:safedropadminpanel/views/settings/user_settings_page.dart'
     deferred as userSettings;
@@ -24,6 +25,8 @@ import 'package:safedropadminpanel/views/calendar/month_calendar_page.dart'
 import 'package:safedropadminpanel/views/home/crm_home_page.dart';
 import 'package:flutter/material.dart';
 
+import '../views/finance/transactions/transactions_page.dart'
+    deferred as transactions;
 import 'components/deferred_widget.dart';
 
 typedef PathWidgetBuilder = Widget Function(BuildContext, String?);
@@ -48,8 +51,8 @@ final List<Map<String, Object>> MAIN_PAGES = [
   {
     'routerPath': '/transactions',
     'widget': DeferredWidget(
-      contacts.loadLibrary,
-      () => contacts.ContactsPage(),
+      transactions.loadLibrary,
+      () => transactions.TransactionsPage(),
     ),
   },
   {

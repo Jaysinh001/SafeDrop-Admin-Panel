@@ -19,6 +19,7 @@ class MyApp extends StatelessWidget {
       //   colorScheme: ColorScheme.fromSeed(seedColor: CrmColors.primary),
       //   useMaterial3: true,
       // ),
+      debugShowCheckedModeBanner: false,
       theme: GlobalTheme.lightThemeData,
       initialRoute: '/signIn',
       onGenerateRoute:

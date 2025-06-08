@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import 'package:safedropadminpanel/views/contacts/add_contact_page.dart';
 import 'package:safedropadminpanel/views/crm_layout.dart';
 import 'package:flareline_uikit/components/buttons/button_widget.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:safedropadminpanel/views/finance/transactions/transactions_controller.dart';
 
 class TransactionsPage extends CrmLayout {
   const TransactionsPage({super.key});
@@ -21,7 +23,7 @@ class TransactionsPage extends CrmLayout {
   @override
   String breakTabTitle(BuildContext context) {
     // TODO: implement breakTabTitle
-    return 'Contacts';
+    return 'Transaction History';
   }
 
   @override
@@ -44,19 +46,22 @@ class TransactionsPage extends CrmLayout {
 
   @override
   Widget contentDesktopWidget(BuildContext context) {
-    return ContactsTableWidget();
+    return TransactionsTableWidget();
   }
 }
 
-class ContactsTableWidget extends TableWidget<ContactsViewModel> {
-  ContactsTableWidget({super.key});
+class TransactionsTableWidget extends TableWidget<TransactionsViewModel> {
+  TransactionsTableWidget({super.key});
+
+  final controller = Get.put(TransactionsController());
 
   @override
   // TODO: implement showCheckboxColumn
-  bool get showCheckboxColumn => true;
+  bool get showCheckboxColumn => false;
+  // bool get showCheckboxColumn => true;
 
   @override
-  Widget toolsWidget(BuildContext context, ContactsViewModel viewModel) {
+  Widget toolsWidget(BuildContext context, TransactionsViewModel viewModel) {
     return SizedBox(
       height: 50,
       child: Row(
@@ -80,7 +85,7 @@ class ContactsTableWidget extends TableWidget<ContactsViewModel> {
       return true;
     }
     if (isMobile) {
-      if ('Contact Name' == columnName || 'Lead Score' == columnName) {
+      if ('Student Name' == columnName || 'Status' == columnName) {
         return true;
       }
     }
@@ -91,9 +96,9 @@ class ContactsTableWidget extends TableWidget<ContactsViewModel> {
   Widget? customWidgetsBuilder(
     BuildContext context,
     TableDataRowsTableDataRows columnData,
-    ContactsViewModel viewModel,
+    TransactionsViewModel viewModel,
   ) {
-    if (columnData.columnName == 'leadScore') {
+    if (columnData.columnName == 'status') {
       return Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -115,7 +120,7 @@ class ContactsTableWidget extends TableWidget<ContactsViewModel> {
     return null;
   }
 
-  _pageWidget(BuildContext context, ContactsViewModel viewModel) {
+  _pageWidget(BuildContext context, TransactionsViewModel viewModel) {
     return Row(
       children: [
         const Text('Showing'),
@@ -133,7 +138,10 @@ class ContactsTableWidget extends TableWidget<ContactsViewModel> {
         const SizedBox(width: 5),
         const Text('of'),
         const SizedBox(width: 5),
-        const Text('56', style: TextStyle(fontWeight: FontWeight.bold)),
+        Text(
+          '${controller.noOfEntries}',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         const SizedBox(width: 5),
         const Text('of'),
         const SizedBox(width: 5),
@@ -143,49 +151,66 @@ class ContactsTableWidget extends TableWidget<ContactsViewModel> {
   }
 
   @override
-  ContactsViewModel viewModelBuilder(BuildContext context) {
-    return ContactsViewModel(context);
+  TransactionsViewModel viewModelBuilder(BuildContext context) {
+    return TransactionsViewModel(context);
   }
 }
 
-class ContactsViewModel extends BaseTableProvider {
+class TransactionsViewModel extends BaseTableProvider {
   @override
-  String get TAG => 'ContactsViewModel';
+  String get TAG => 'TransactionsViewModel';
 
-  ContactsViewModel(super.context);
+  final controller = Get.put(TransactionsController());
+
+  TransactionsViewModel(super.context);
 
   @override
   Future loadData(BuildContext context) async {
+    final response = await controller.getTransectionHistory();
+
+    //column names
     const headers = [
-      "Contact Name",
-      "Last Contacted",
-      "Company",
-      "Contact",
-      "Lead Score",
+      "Student Name",
+      "Transaction Id",
+      "Amount",
+      // "Phone No",
+      "Billing Reason",
+      "Status",
     ];
 
     List rows = [];
 
-    for (int i = 0; i < 50; i++) {
+    //can change 50 to no.of items from items(☝️)
+    for (int i = 0; i < response!.length; i++) {
       List<List<Map<String, dynamic>>> list = [];
 
       List<Map<String, dynamic>> row = [];
-      var id = i;
+      // var id = i;
       var item = {
-        'contactName': 'Tom${id}',
-        'lastContacted': '1 Feb, 2020',
-        'company': 'Starbucks',
-        'contact': 'nathan.roberts@example.com',
-        'phone': '(201) 555-0124',
-        'leadScore': 'Online store',
+        // replace with below item
+        'studentName': response[i].studentId,
+        'transactionID': response[i].transactionRef,
+        'amount': response[i].amount,
+        // 'phone': '(201) 555-0124',
+        'billingReason': response[i].bankDetailsId,
+        'status': response[i].status,
       };
-      row.add(getItemValue('contactName', item));
-      row.add(getItemValue('lastContacted', item));
-      row.add(getItemValue('company', item));
-      row.add(getItemValue('contact', item));
-      row.add(
-        getItemValue('leadScore', item, dataType: CellDataType.CUSTOM.type),
-      );
+
+      // var response = {
+      //   'studentName': items.studentName,
+      //   'transactionID': items.transactionID,
+      //   'amount': items.amount,
+      //   // 'phone': items.phone,
+      //   'billingReason': items.billingReason,
+      //   'status': items.status,
+      // };
+
+      row.add(getItemValue('studentName', item));
+      row.add(getItemValue('transactionID', item));
+      row.add(getItemValue('amount', item));
+      // row.add(getItemValue('phoneNo', item));
+      row.add(getItemValue('billingReason', item));
+      row.add(getItemValue('status', item, dataType: CellDataType.CUSTOM.type));
       list.add(row);
 
       rows.addAll(list);

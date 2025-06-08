@@ -105,8 +105,8 @@ class AddTransactionPage extends BaseWidget<AddContactViewModel> {
       hintText: hint,
       hintStyle: const TextStyle(fontSize: 14, color: CrmColors.paragraph),
       icon: Container(
-        child: ImageWidget(imageUrl: 'assets/crm/$svg', width: 20, height: 20),
         margin: EdgeInsets.symmetric(horizontal: 5),
+        child: ImageWidget(imageUrl: 'assets/crm/$svg', width: 20, height: 20),
       ),
     );
   }
