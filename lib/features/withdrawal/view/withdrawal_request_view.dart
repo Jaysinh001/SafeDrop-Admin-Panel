@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'dart:convert';
 
 import '../../../core/theme/colors.dart';
 import '../../../shared/widgets/loading_view.dart';
@@ -333,6 +332,7 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
             request: request,
             onApprove: () => controller.approveRequest(request),
             onReject: () => controller.showRejectionDialog(request),
+            onView: () => controller.openDriverDetails(request.driverId ?? 0),
             isProcessing: controller.processingIds.contains(request.id),
           );
         },
@@ -353,6 +353,7 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
               request: request,
               onApprove: () => controller.approveRequest(request),
               onReject: () => controller.showRejectionDialog(request),
+              onView: () => controller.openDriverDetails(request.driverId ?? 0),
               isProcessing: controller.processingIds.contains(request.id),
               isMobile: true,
             ),
@@ -442,6 +443,17 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
             tooltip: 'Reject',
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
+          const SizedBox(width: 4),
+          IconButton(
+            onPressed:
+                () => controller.openDriverDetails(request.driverId ?? 0),
+            icon: const Icon(
+              Icons.remove_red_eye_outlined,
+              color: AppColors.info,
+            ),
+            tooltip: 'View Driver',
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
         ],
       ],
     );
@@ -510,6 +522,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
   final Request request;
   final VoidCallback onApprove;
   final VoidCallback onReject;
+  final VoidCallback onView;
   final bool isProcessing;
   final bool isMobile;
 
@@ -517,6 +530,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
     required this.request,
     required this.onApprove,
     required this.onReject,
+    required this.onView,
     required this.isProcessing,
     this.isMobile = false,
   });
@@ -632,7 +646,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
                       child: OutlinedButton.icon(
                         onPressed: onReject,
                         icon: const Icon(Icons.close, size: 18),
-                        label: const Text('Reject'),
+                        label: FittedBox(child: const Text('Reject')),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
                           side: const BorderSide(color: AppColors.error),
@@ -644,10 +658,25 @@ class _WithdrawalRequestCard extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: onApprove,
                         icon: const Icon(Icons.check, size: 18),
-                        label: const Text('Approve'),
+                        label: FittedBox(child: const Text('Approve')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.success,
                           foregroundColor: AppColors.onSuccess,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: onView,
+                        icon: const Icon(
+                          Icons.remove_red_eye_outlined,
+                          size: 18,
+                        ),
+                        label: FittedBox(child: const Text('View Driver')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.info,
+                          foregroundColor: AppColors.infoContainer,
                         ),
                       ),
                     ),

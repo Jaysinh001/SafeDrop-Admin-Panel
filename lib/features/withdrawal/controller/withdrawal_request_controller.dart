@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safedrop_panel/core/services/network_services_api.dart';
 
+import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/colors.dart';
+import '../../users/driver/model/drivers_list_response.dart';
 import '../model/withdrawal_request_response.dart';
 
 class WithdrawalRequestsController extends GetxController {
@@ -289,6 +291,17 @@ class WithdrawalRequestsController extends GetxController {
           ),
         ],
       ),
+    );
+  }
+
+  // Navigate to driver details
+  void openDriverDetails(int driverID) {
+    // Navigate to driver details view
+    Get.toNamed(AppRoutes.driverDetails, arguments: {'id' : driverID});
+    Get.snackbar(
+      'Driver Selected',
+      'Opening details for Driver ID : $driverID',
+      duration: const Duration(seconds: 2),
     );
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'dart:convert';
 
-import '../../../shared/widgets/loading_view.dart';
+import '../../../../shared/widgets/loading_view.dart';
 import '../controller/drivers_list_controller.dart';
 import '../model/drivers_list_response.dart';
 

@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "275825903555",
+    "firebase_url": "https://feepay-cf15d-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "feepay-cf15d",
+    "storage_bucket": "feepay-cf15d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275825903555:android:b000e2162ce4a103aa1f76",
+        "android_client_info": {
+          "package_name": "com.jcdev.driver_safedrop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyiyaTiCr4aXwf6BLvinK93KYGf1t51ro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275825903555:android:e485c0a60aed7d87aa1f76",
+        "android_client_info": {
+          "package_name": "com.jcdev.safedrop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyiyaTiCr4aXwf6BLvinK93KYGf1t51ro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275825903555:android:de35567356989988aa1f76",
+        "android_client_info": {
+          "package_name": "com.jcdev.safedrop_panel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyiyaTiCr4aXwf6BLvinK93KYGf1t51ro"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

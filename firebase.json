@@ -1,0 +1,38 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "feepay-cf15d",
+          "appId": "1:275825903555:android:de35567356989988aa1f76",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "feepay-cf15d",
+          "configurations": {
+            "android": "1:275825903555:android:de35567356989988aa1f76",
+            "ios": "1:275825903555:ios:61e733b1b6d54001aa1f76",
+            "web": "1:275825903555:web:931cae91da94e5aaaa1f76",
+            "windows": "1:275825903555:web:eec02b8d35f0b6d6aa1f76"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

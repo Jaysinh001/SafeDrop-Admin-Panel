@@ -5,9 +5,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../shared/widgets/loading_view.dart';
-import '../controller/driver_detail_controller.dart';
-import '../model/driver_details_response.dart';
+import '../../../../shared/widgets/loading_view.dart';
+import '../controller/student_detail_controller.dart';
+import '../model/student_details_response.dart';
 
 class DriverDetailsView extends GetView<DriverDetailsController> {
   const DriverDetailsView({super.key});

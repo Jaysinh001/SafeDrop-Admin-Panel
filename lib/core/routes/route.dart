@@ -1,9 +1,9 @@
 import 'package:get/get.dart';
-import 'package:safedrop_panel/features/driver/view/driver_detail_view.dart';
+import 'package:safedrop_panel/features/users/driver/view/driver_detail_view.dart';
 
 import '../../features/auth/view/login_view.dart';
 import '../../features/dashboard/view/dashboard_view.dart';
-import '../../features/driver/view/drivers_list_view.dart';
+import '../../features/users/driver/view/drivers_list_view.dart';
 import '../../features/withdrawal/view/withdrawal_request_view.dart';
 import '../../shared/layout/view/admin_panel_layout.dart';
 import '../dependencies/bindings.dart';

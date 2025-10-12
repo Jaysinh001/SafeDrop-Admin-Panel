@@ -5,8 +5,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/routes/app_routes.dart';
-import '../../../core/services/network_services_api.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/network_services_api.dart';
 import '../model/drivers_list_response.dart';
 
 class DriversListController extends GetxController {

@@ -6,8 +6,8 @@ import 'package:get/get.dart';
 
 import '../../features/auth/controller/login_controller.dart';
 import '../../features/dashboard/controller/dashboard_controller.dart';
-import '../../features/driver/controller/driver_detail_controller.dart';
-import '../../features/driver/controller/drivers_list_controller.dart';
+import '../../features/users/driver/controller/driver_detail_controller.dart';
+import '../../features/users/driver/controller/drivers_list_controller.dart';
 import '../../features/withdrawal/controller/withdrawal_request_controller.dart';
 import '../../shared/layout/view/admin_layout_controller.dart';
 
