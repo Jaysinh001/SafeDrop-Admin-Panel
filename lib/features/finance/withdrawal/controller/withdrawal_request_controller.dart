@@ -6,9 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:safedrop_panel/core/services/network_services_api.dart';
 
-import '../../../core/routes/app_routes.dart';
-import '../../../core/theme/colors.dart';
-import '../../users/driver/model/drivers_list_response.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/theme/colors.dart';
+import '../../../users/driver/model/drivers_list_response.dart';
+import '../../../users/driver/model/general_api_response.dart';
 import '../model/withdrawal_request_response.dart';
 
 class WithdrawalRequestsController extends GetxController {
@@ -130,25 +131,40 @@ class WithdrawalRequestsController extends GetxController {
     update();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 800));
+      var payload = {'id': request.id, 'approve': true, 'note': ''};
 
-      // Update local data
-      final index = _withdrawalRequests.indexWhere((r) => r.id == request.id);
-      if (index != -1) {
-        _withdrawalRequests[index] = request.copyWith(
-          status: 'approved',
-          updatedAt: DateTime.now(),
-        );
-        _applyFilters();
-      }
-
-      Get.snackbar(
-        'Success',
-        'Withdrawal request #${request.id} approved successfully',
-        backgroundColor: AppColors.success,
-        colorText: AppColors.onSuccess,
+      final res = await NetworkServicesApi().postApi(
+        path: 'withdrawalAction',
+        data: payload,
       );
+
+      final response = generalApiResponseFromJson(res);
+
+      if (response.success ?? false) {
+        // Update local data
+        final index = _withdrawalRequests.indexWhere((r) => r.id == request.id);
+        if (index != -1) {
+          _withdrawalRequests[index] = request.copyWith(
+            status: 'approved',
+            updatedAt: DateTime.now(),
+          );
+          _applyFilters();
+        }
+
+        Get.snackbar(
+          'Success',
+          'Withdrawal request #${request.id} approved successfully',
+          backgroundColor: AppColors.success,
+          colorText: AppColors.onSuccess,
+        );
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to approve request: ${response.message}',
+          backgroundColor: AppColors.error,
+          colorText: AppColors.onError,
+        );
+      }
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -170,33 +186,47 @@ class WithdrawalRequestsController extends GetxController {
     update();
 
     try {
-      // Simulate API call
-      await Future.delayed(const Duration(milliseconds: 800));
+      var payload = {
+        'id': request.id,
+        'approve': false,
+        'note': rejectionReason,
+      };
 
-      // Update local data
-      final index = _withdrawalRequests.indexWhere((r) => r.id == request.id);
-      if (index != -1) {
-        _withdrawalRequests[index] = request.copyWith(
-          status: 'rejected',
-          note: rejectionReason.isNotEmpty ? rejectionReason : request.note,
-          updatedAt: DateTime.now(),
-        );
-        _applyFilters();
-      }
-
-      Get.snackbar(
-        'Success',
-        'Withdrawal request #${request.id} rejected',
-        backgroundColor: AppColors.warning,
-        colorText: AppColors.onWarning,
+      final res = await NetworkServicesApi().postApi(
+        path: 'withdrawalAction',
+        data: payload,
       );
-    } catch (e) {
-      Get.snackbar(
+
+      final response = generalApiResponseFromJson(res);
+
+      if (response.success ?? false) {
+        // Update local data
+        final index = _withdrawalRequests.indexWhere((r) => r.id == request.id);
+        if (index != -1) {
+          _withdrawalRequests[index] = request.copyWith(
+            status: 'rejected',
+            note: rejectionReason.isNotEmpty ? rejectionReason : request.note,
+            updatedAt: DateTime.now(),
+          );
+          _applyFilters();
+        }
+
+        Get.snackbar(
+          'Success',
+          'Withdrawal request #${request.id} rejected',
+          backgroundColor: AppColors.warning,
+          colorText: AppColors.onWarning,
+        );
+      } else {
+         Get.snackbar(
         'Error',
-        'Failed to reject request: $e',
+        'Failed to reject request: ${response.message}',
         backgroundColor: AppColors.error,
         colorText: AppColors.onError,
       );
+      }
+    } catch (e) {
+     
     } finally {
       _isProcessing.remove(request.id!);
       update();
@@ -297,7 +327,7 @@ class WithdrawalRequestsController extends GetxController {
   // Navigate to driver details
   void openDriverDetails(int driverID) {
     // Navigate to driver details view
-    Get.toNamed(AppRoutes.driverDetails, arguments: {'id' : driverID});
+    Get.toNamed(AppRoutes.driverDetails, arguments: {'id': driverID});
     Get.snackbar(
       'Driver Selected',
       'Opening details for Driver ID : $driverID',

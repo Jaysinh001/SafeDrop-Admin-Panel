@@ -13,6 +13,8 @@ abstract class AppRoutes {
 
   // Finance Routes
   static const withdrawals = '/withdrawals';
+  static const transactions = '/transactions';
+  static const transactionDetails = '/transactionDetails';
 
   // Users Routes
   static const driversList = '/driversList';

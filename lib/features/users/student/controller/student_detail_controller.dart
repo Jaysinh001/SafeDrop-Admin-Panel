@@ -1,73 +1,78 @@
 // =============================================================================
-// DRIVER DETAILS CONTROLLER
+// STUDENT DETAILS CONTROLLER
 // =============================================================================
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:safedrop_panel/core/services/network_services_api.dart';
 
-import '../../driver/model/drivers_list_response.dart' as dlr;
+import '../../../../core/routes/app_routes.dart';
+import '../../../../core/services/network_services_api.dart';
 import '../model/student_details_response.dart';
-import '../model/students_list_response.dart' as dlr;
+import '../model/students_list_response.dart' as slr;
 
-class DriverDetailsController extends GetxController {
+class StudentDetailsController extends GetxController {
   // Reactive variables
-  final _driverDetails = Rx<Data?>(null);
+  final _studentDetails = Rx<Details?>(null);
   final _isLoading = false.obs;
   final _selectedTab = 0.obs;
-  final _driverId = 0.obs;
+  final _studentId = 0.obs;
+  final _transactionFilter = 'all'.obs;
 
   // Getters
-  Data? get driverDetails => _driverDetails.value;
-  Driver? get driver => _driverDetails.value?.driver;
-  Wallet? get wallet => _driverDetails.value?.wallet;
-  List<BankDetail> get bankDetails => _driverDetails.value?.bankDetails ?? [];
-  List<Vehicle> get vehicles => _driverDetails.value?.vehicles ?? [];
-  UniqueCode? get uniqueCode => _driverDetails.value?.uniqueCode;
-  FcmToken? get fcmToken => _driverDetails.value?.fcmToken;
+  Details? get studentDetails => _studentDetails.value;
+  Student? get student => _studentDetails.value?.student;
+  Driver? get driver => _studentDetails.value?.driver;
+  List<Transaction> get transactions => _studentDetails.value?.transactions ?? [];
+  StudentCreditBalance? get creditBalance => _studentDetails.value?.studentCreditBalance;
+  UniqueCode? get uniqueCode => _studentDetails.value?.uniqueCode;
+  FcmToken? get fcmToken => _studentDetails.value?.fcmToken;
   bool get isLoading => _isLoading.value;
   int get selectedTab => _selectedTab.value;
-  int get driverId => _driverId.value;
+  int get studentId => _studentId.value;
+  String get transactionFilter => _transactionFilter.value;
 
   // Tab titles
   final List<String> tabTitles = [
     'Overview',
-    'Wallet',
-    'Bank Details',
-    'Vehicles',
-    'Activity',
+    'Transactions',
+    'Credit Balance',
+    'Activity'
   ];
 
   @override
   void onInit() {
     super.onInit();
-    // Get driver ID from arguments or route parameters
+    // Get student ID from arguments
     final args = Get.arguments;
-    if (args is dlr.Driver) {
-      _driverId.value = args.id ?? 0;
+    if (args is slr.Student) {
+      _studentId.value = args.studentId ?? 0;
     } else if (args is Map && args['id'] != null) {
-      _driverId.value = args['id'];
+      _studentId.value = args['id'];
     }
-    loadDriverDetails();
+    loadStudentDetails();
   }
 
-  // Load driver details from API
-  Future<void> loadDriverDetails() async {
+  // Load student details from API
+  Future<void> loadStudentDetails() async {
     _isLoading.value = true;
-
+    
     try {
-      final res = await NetworkServicesApi().getApi(
-        path: 'driver/details/${_driverId.value}',
+      
+     final res = await NetworkServicesApi().getApi(
+        path: 'student/details/${_studentId.value}',
         // path: 'driver/details/1',
       );
 
-      final response = driversDetailsResponseFromJson(res);
+      final response = studentDetailsResponseFromJson(res);
 
-      _driverDetails.value = response.data;
+      _studentDetails.value = response.details;
+      
+     
+      
     } catch (e) {
       Get.snackbar(
         'Error',
-        'Failed to load driver details: $e',
+        'Failed to load student details: $e',
         backgroundColor: Colors.red,
         colorText: Colors.white,
       );
@@ -81,59 +86,118 @@ class DriverDetailsController extends GetxController {
     _selectedTab.value = index;
   }
 
+  // Set transaction filter
+  void setTransactionFilter(String filter) {
+    _transactionFilter.value = filter;
+  }
+
+  // Get filtered transactions
+  List<Transaction> get filteredTransactions {
+    if (_transactionFilter.value == 'all') {
+      return transactions;
+    }
+    return transactions.where((t) => 
+      t.status?.toLowerCase() == _transactionFilter.value.toLowerCase()
+    ).toList();
+  }
+
   // Refresh data
   Future<void> refreshData() async {
-    await loadDriverDetails();
+    await loadStudentDetails();
   }
 
   // Actions
-  void editDriver() {
-    Get.snackbar('Edit Driver', 'Edit functionality coming soon!');
+  void editStudent() {
+    Get.snackbar('Edit Student', 'Edit functionality coming soon!');
   }
 
-  void suspendDriver() {
+  void suspendStudent() {
     Get.defaultDialog(
-      title: 'Suspend Driver',
-      middleText: 'Are you sure you want to suspend this driver?',
+      title: 'Suspend Student',
+      middleText: 'Are you sure you want to suspend this student account?',
       textConfirm: 'Suspend',
       textCancel: 'Cancel',
       confirmTextColor: Colors.white,
       buttonColor: Colors.red,
       onConfirm: () {
         Get.back();
-        Get.snackbar('Success', 'Driver suspended successfully');
+        Get.snackbar('Success', 'Student account suspended');
       },
     );
   }
 
-  void contactDriver() {
-    final phoneNumber = driver?.phoneNumber;
-    Get.snackbar('Contact', 'Calling $phoneNumber...');
+  void contactStudent() {
+    Get.snackbar('Contact', 'Calling ${student?.phoneNumber}...');
   }
 
   void sendNotification() {
-    Get.snackbar('Notification', 'Notification sent to driver');
+    Get.snackbar('Notification', 'Notification sent to student');
   }
 
-  // Get driver status
-  String get driverStatus {
-    if (driver?.hasBankDetails == true && driver?.mpinSet == true) {
+  void viewDriverDetails() {
+    if (driver != null) {
+      
+      Get.toNamed(AppRoutes.driverDetails, arguments: {"id": driver?.id});
+      Get.snackbar('Driver Details', 'Opening details for ${driver?.driverName}');
+    }
+  }
+
+  void recordPayment() {
+    Get.snackbar('Record Payment', 'Payment recording functionality coming soon!');
+  }
+
+  void sendPaymentReminder() {
+    Get.snackbar('Payment Reminder', 'Payment reminder sent to student');
+  }
+
+  // Get student status
+  String get studentStatus {
+    if (student?.accountActive == true && driver != null) {
       return 'Active';
-    } else if (driver?.hasBankDetails == true || driver?.mpinSet == true) {
-      return 'Incomplete Setup';
+    } else if (student?.accountActive == true) {
+      return 'Active (No Driver)';
     } else {
       return 'Inactive';
     }
   }
 
   Color get statusColor {
-    switch (driverStatus) {
-      case 'Active':
-        return Colors.green;
-      case 'Incomplete Setup':
-        return Colors.orange;
-      default:
-        return Colors.red;
+    if (student?.accountActive == true && driver != null) {
+      return Colors.green;
+    } else if (student?.accountActive == true) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
     }
+  }
+
+  // Calculate statistics
+  int get totalPaid {
+    return transactions
+        .where((t) => t.status?.toLowerCase() == 'completed')
+        .fold(0, (sum, t) => sum + (t.amount ?? 0));
+  }
+
+  int get totalPending {
+    return transactions
+        .where((t) => t.status?.toLowerCase() == 'pending')
+        .fold(0, (sum, t) => sum + (t.amount ?? 0));
+  }
+
+  int get completedTransactions {
+    return transactions.where((t) => t.status?.toLowerCase() == 'completed').length;
+  }
+
+  int get pendingTransactions {
+    return transactions.where((t) => t.status?.toLowerCase() == 'pending').length;
+  }
+
+  int get failedTransactions {
+    return transactions.where((t) => t.status?.toLowerCase() == 'failed').length;
+  }
+
+  // Get due amount (proposed fee - credit balance)
+  int get dueAmount {
+    return (student?.proposedFee ?? 0) - (creditBalance?.credit ?? 0);
   }
 }

@@ -1166,7 +1166,7 @@ class _BankDetailsTab extends StatelessWidget {
                 ),
                 _buildBankDetailRow(
                   'Account Number',
-                  _maskAccountNumber(bank.accountNumber),
+                  bank.accountNumber ?? 'N/A',
                 ),
                 _buildBankDetailRow('IFSC Code', bank.ifscCode ?? 'N/A'),
                 _buildBankDetailRow('Added On', _formatDate(bank.createdAt)),
@@ -1202,11 +1202,7 @@ class _BankDetailsTab extends StatelessWidget {
     );
   }
 
-  String _maskAccountNumber(String? accountNumber) {
-    if (accountNumber == null || accountNumber.length < 4) return 'N/A';
-    final last4 = accountNumber.substring(accountNumber.length - 4);
-    return '****$last4';
-  }
+ 
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';

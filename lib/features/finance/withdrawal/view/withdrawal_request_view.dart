@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import '../../../core/theme/colors.dart';
-import '../../../shared/widgets/loading_view.dart';
+import '../../../../core/theme/colors.dart';
+import '../../../../shared/widgets/loading_view.dart';
 import '../controller/withdrawal_request_controller.dart';
 import '../model/withdrawal_request_response.dart';
 

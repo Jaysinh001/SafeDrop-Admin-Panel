@@ -52,6 +52,13 @@ class AdminNavigationItems {
           route: '/withdrawals',
           breadcrumbs: ['Home', 'Finance', 'Withdrawals'],
         ),
+        NavigationItem(
+          id: 22,
+          title: 'Transactions',
+          icon: Icons.currency_exchange_rounded,
+          route: '/transactions',
+          breadcrumbs: ['Home', 'Finance', 'Transactions'],
+        ),
       ],
     ),
     NavigationItem(

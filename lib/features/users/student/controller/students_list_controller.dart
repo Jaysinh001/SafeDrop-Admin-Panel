@@ -1,223 +1,232 @@
-// // =============================================================================
-// // DRIVERS LIST CONTROLLER
-// // =============================================================================
+import 'dart:developer';
 
-// import 'package:flutter/material.dart';
-// import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:safedrop_panel/core/services/network_services_api.dart';
 
-// import '../../../../core/routes/app_routes.dart';
-// import '../../../../core/services/network_services_api.dart';
-// import '../model/students_list_response.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../model/students_list_response.dart';
 
-// class DriversListController extends GetxController {
-//   // Reactive variables
-//   final _students = <Student>[].obs;
-//   final _filteredStudents = <Student>[].obs;
-//   final _isLoading = false.obs;
-//   final _selectedFilter = 'all'.obs;
-//   final _searchQuery = ''.obs;
-//   final _sortBy = 'name'.obs;
-//   final _sortAscending = true.obs;
+// =============================================================================
+// STUDENTS LIST CONTROLLER
+// =============================================================================
 
-//   // Getters
-//   List<Student> get students => _students.toList();
-//   List<Student> get filteredStudents => _filteredStudents.toList();
-//   bool get isLoading => _isLoading.value;
-//   String get selectedFilter => _selectedFilter.value;
-//   String get searchQuery => _searchQuery.value;
-//   String get sortBy => _sortBy.value;
-//   bool get sortAscending => _sortAscending.value;
+class StudentsListController extends GetxController {
+  // Reactive variables
+  final _students = <Student>[].obs;
+  final _filteredStudents = <Student>[].obs;
+  final _isLoading = false.obs;
+  final _selectedFilter = 'all'.obs;
+  final _searchQuery = ''.obs;
+  final _sortBy = 'name'.obs;
+  final _sortAscending = true.obs;
 
-//   // Filter options
-//   final List<String> filterOptions = [
-//     'all',
-//     'active',
-//     'with_bank_details',
-//     'without_bank_details',
-//     'mpin_set',
-//     'mpin_not_set',
-//   ];
+  // Getters
+  List<Student> get students => _students.toList();
+  List<Student> get filteredStudents => _filteredStudents.toList();
+  bool get isLoading => _isLoading.value;
+  String get selectedFilter => _selectedFilter.value;
+  String get searchQuery => _searchQuery.value;
+  String get sortBy => _sortBy.value;
+  bool get sortAscending => _sortAscending.value;
 
-//   // Sort options
-//   final List<String> sortOptions = [
-//     'name',
-//     'email',
-//     'created_date',
-//     'unique_code',
-//   ];
+  // Filter options
+  final List<String> filterOptions = [
+    'all',
+    'active',
+    'inactive',
+    'assigned',
+    'unassigned',
+  ];
 
-//   @override
-//   void onInit() {
-//     super.onInit();
-//     loadDrivers();
+  // Sort options
+  final List<String> sortOptions = ['name', 'fee', 'student_id', 'driver'];
 
-//     // Watch for changes in search query and filter
-//     debounce(
-//       _searchQuery,
-//       (_) => _applyFiltersAndSort(),
-//       time: const Duration(milliseconds: 500),
-//     );
-//     ever(_selectedFilter, (_) => _applyFiltersAndSort());
-//     ever(_sortBy, (_) => _applyFiltersAndSort());
-//     ever(_sortAscending, (_) => _applyFiltersAndSort());
-//   }
+  @override
+  void onInit() {
+    super.onInit();
+    loadStudents();
 
-//   // Load drivers from API
-//   Future<void> loadDrivers() async {
-//     _isLoading.value = true;
+    // Watch for changes
+    debounce(
+      _searchQuery,
+      (_) => _applyFiltersAndSort(),
+      time: const Duration(milliseconds: 500),
+    );
+    ever(_selectedFilter, (_) => _applyFiltersAndSort());
+    ever(_sortBy, (_) => _applyFiltersAndSort());
+    ever(_sortAscending, (_) => _applyFiltersAndSort());
+  }
 
-//     try {
-//       final res = await NetworkServicesApi().getApi(path: 'allStudents');
+  // Load students from API
+  Future<void> loadStudents() async {
+    _isLoading.value = true;
 
-//       final response = studentsListResponseFromJson(res);
+    try {
+      // Simulate API call - Replace with your actual API call
+      final res = await NetworkServicesApi().getApi(path: "allStudents");
 
-//       _students.value = response.students ?? [];
-//       _applyFiltersAndSort();
-//     } catch (e) {
-//       Get.snackbar(
-//         'Error',
-//         'Failed to load Students: $e',
-//         backgroundColor: Colors.red,
-//         colorText: Colors.white,
-//       );
-//     } finally {
-//       _isLoading.value = false;
-//     }
-//   }
+      final response = studentsListResponseFromJson(res);
 
-//   // Apply filters and search
-//   void _applyFiltersAndSort() {
-//     List<Student> filtered = _students;
+      if (response.success == true) {
+        _students.value = response.students ?? [];
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load students: ${response.message}',
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+        );
+      }
 
-//     // // Apply status filter
-//     // switch (_selectedFilter.value) {
-//     //   case 'with_bank_details':
-//     //     filtered =
-//     //         filtered.where((driver) => driver.hasBankDetails == true).toList();
-//     //     break;
-//     //   case 'without_bank_details':
-//     //     filtered =
-//     //         filtered.where((driver) => driver.hasBankDetails == false).toList();
-//     //     break;
-//     //   case 'mpin_set':
-//     //     filtered = filtered.where((driver) => driver.mpinSet == true).toList();
-//     //     break;
-//     //   case 'mpin_not_set':
-//     //     filtered = filtered.where((driver) => driver.mpinSet == false).toList();
-//     //     break;
-//     //   case 'active':
-//     //     // Define your own logic for active drivers
-//     //     filtered =
-//     //         filtered
-//     //             .where(
-//     //               (driver) =>
-//     //                   driver.hasBankDetails == true && driver.mpinSet == true,
-//     //             )
-//     //             .toList();
-//     //     break;
-//       // default:
-//       //   // 'all' - no filter
-//       //   break;
-//     }
+      _applyFiltersAndSort();
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to load students: $e',
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
+  }
 
-//     // Apply search filter
-//     if (_searchQuery.value.isNotEmpty) {
-//       final query = _searchQuery.value.toLowerCase();
-//       filtered =
-//           filtered
-//               .where(
-//                 (driver) =>
-//                     (driver.driverName?.toLowerCase().contains(query) ??
-//                         false) ||
-//                     (driver.email?.toLowerCase().contains(query) ?? false) ||
-//                     (driver.phoneNumber?.contains(_searchQuery.value) ??
-//                         false) ||
-//                     driver.id.toString().contains(_searchQuery.value) ||
-//                     driver.uniqueCodeId.toString().contains(_searchQuery.value),
-//               )
-//               .toList();
-//     }
+  // Apply filters and search
+  void _applyFiltersAndSort() {
+    List<Student> filtered = _students;
 
-//     // Apply sorting
-//     filtered = _sortDrivers(filtered);
+    // Apply status filter
+    switch (_selectedFilter.value) {
+      case 'active':
+        filtered =
+            filtered.where((student) => student.accountActive == true).toList();
+        break;
+      case 'inactive':
+        filtered =
+            filtered
+                .where((student) => student.accountActive == false)
+                .toList();
+        break;
+      case 'assigned':
+        filtered =
+            filtered.where((student) => student.driverId != null).toList();
+        break;
+      case 'unassigned':
+        filtered =
+            filtered.where((student) => student.driverId == null).toList();
+        break;
+      default:
+        // 'all' - no filter
+        break;
+    }
 
-//     _filteredStudents.value = filtered;
-//   }
+    // Apply search filter
+    if (_searchQuery.value.isNotEmpty) {
+      final query = _searchQuery.value.toLowerCase();
+      filtered =
+          filtered
+              .where(
+                (student) =>
+                    (student.studentName?.toLowerCase().contains(query) ??
+                        false) ||
+                    (student.email?.toLowerCase().contains(query) ?? false) ||
+                    (student.phoneNumber?.contains(_searchQuery.value) ??
+                        false) ||
+                    student.studentId.toString().contains(_searchQuery.value) ||
+                    (student.driverName?.toLowerCase().contains(query) ??
+                        false) ||
+                    (student.driverCode?.toLowerCase().contains(query) ??
+                        false),
+              )
+              .toList();
+    }
 
-//   List<Student> _sortDrivers(List<Student> drivers) {
-//     drivers.sort((a, b) {
-//       int comparison = 0;
+    // Apply sorting
+    filtered = _sortStudents(filtered);
 
-//       switch (_sortBy.value) {
-//         case 'name':
-//           comparison = (a.driverName ?? '').compareTo(b.driverName ?? '');
-//           break;
-//         case 'email':
-//           comparison = (a.email ?? '').compareTo(b.email ?? '');
-//           break;
-//         case 'created_date':
-//           comparison = (a.createdAt ?? DateTime(0)).compareTo(
-//             b.createdAt ?? DateTime(0),
-//           );
-//           break;
-//         case 'unique_code':
-//           comparison = (a.uniqueCodeId ?? 0).compareTo(b.uniqueCodeId ?? 0);
-//           break;
-//       }
+    _filteredStudents.value = filtered;
+  }
 
-//       return _sortAscending.value ? comparison : -comparison;
-//     });
+  List<Student> _sortStudents(List<Student> students) {
+    students.sort((a, b) {
+      int comparison = 0;
 
-//     return drivers;
-//   }
+      switch (_sortBy.value) {
+        case 'name':
+          comparison = (a.studentName ?? '').compareTo(b.studentName ?? '');
+          break;
+        case 'fee':
+          comparison = (a.proposedFee ?? 0).compareTo(b.proposedFee ?? 0);
+          break;
+        case 'student_id':
+          comparison = (a.studentId ?? 0).compareTo(b.studentId ?? 0);
+          break;
+        case 'driver':
+          comparison = (a.driverName ?? '').compareTo(b.driverName ?? '');
+          break;
+      }
 
-//   // Set search query
-//   void setSearchQuery(String query) {
-//     _searchQuery.value = query;
-//   }
+      return _sortAscending.value ? comparison : -comparison;
+    });
 
-//   // Set filter
-//   void setFilter(String filter) {
-//     _selectedFilter.value = filter;
-//   }
+    return students;
+  }
 
-//   // Set sort
-//   void setSortBy(String sortBy) {
-//     if (_sortBy.value == sortBy) {
-//       _sortAscending.value = !_sortAscending.value;
-//     } else {
-//       _sortBy.value = sortBy;
-//       _sortAscending.value = true;
-//     }
-//   }
+  // Set search query
+  void setSearchQuery(String query) {
+    _searchQuery.value = query;
+  }
 
-//   // Navigate to driver details
-//   void openDriverDetails(Student driver) {
-//     // Navigate to driver details view
-//     Get.toNamed(AppRoutes.driverDetails, arguments: driver);
-//     Get.snackbar(
-//       'Student Selected',
-//       'Opening details for ${driver.driverName}',
-//       duration: const Duration(seconds: 2),
-//     );
-//   }
+  // Set filter
+  void setFilter(String filter) {
+    _selectedFilter.value = filter;
+  }
 
-//   // Refresh data
-//   Future<void> refreshData() async {
-//     await loadDrivers();
-//   }
+  // Set sort
+  void setSortBy(String sortBy) {
+    if (_sortBy.value == sortBy) {
+      _sortAscending.value = !_sortAscending.value;
+    } else {
+      _sortBy.value = sortBy;
+      _sortAscending.value = true;
+    }
+  }
 
-//   // Get driver statistics
-//   Map<String, int> get driverStats {
-//     return {
-//       'total': _students.length,
-//       'with_bank_details':
-//           _students.where((d) => d.hasBankDetails == true).length,
-//       'mpin_set': _students.where((d) => d.mpinSet == true).length,
-//       'active':
-//           _students
-//               .where((d) => d.hasBankDetails == true && d.mpinSet == true)
-//               .length,
-//     };
-//   }
-// }
+  // Navigate to student details
+  void openStudentDetails(Student student) {
+
+    log("opening student id : ${student.studentId}");
+    // Navigate to student details view
+    Get.toNamed(AppRoutes.studentDetails, arguments: student);
+    Get.snackbar(
+      'Student Selected',
+      'Opening details for ${student.studentName}',
+      duration: const Duration(seconds: 2),
+    );
+  }
+
+  // Refresh data
+  Future<void> refreshData() async {
+    await loadStudents();
+  }
+
+  // Get student statistics
+  Map<String, int> get studentStats {
+    return {
+      'total': _students.length,
+      'active': _students.where((s) => s.accountActive == true).length,
+      'inactive': _students.where((s) => s.accountActive == false).length,
+      'assigned': _students.where((s) => s.driverId != null).length,
+      'unassigned': _students.where((s) => s.driverId == null).length,
+    };
+  }
+
+  // Get total fee
+  int get totalProposedFee {
+    return _students.fold(
+      0,
+      (sum, student) => sum + (student.proposedFee ?? 0),
+    );
+  }
+}

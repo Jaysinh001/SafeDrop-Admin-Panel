@@ -6,9 +6,13 @@ import 'package:get/get.dart';
 
 import '../../features/auth/controller/login_controller.dart';
 import '../../features/dashboard/controller/dashboard_controller.dart';
+import '../../features/finance/transactions/controller/transaction_details_controller.dart';
+import '../../features/finance/transactions/controller/transactions_list_controller.dart';
 import '../../features/users/driver/controller/driver_detail_controller.dart';
 import '../../features/users/driver/controller/drivers_list_controller.dart';
-import '../../features/withdrawal/controller/withdrawal_request_controller.dart';
+import '../../features/users/student/controller/student_detail_controller.dart';
+import '../../features/users/student/controller/students_list_controller.dart';
+import '../../features/finance/withdrawal/controller/withdrawal_request_controller.dart';
 import '../../shared/layout/view/admin_layout_controller.dart';
 
 class LoginBinding extends Bindings {
@@ -56,6 +60,35 @@ class WithdrawalRequestsBinding extends Bindings {
   }
 }
 
+
+// =============================================================================
+// TRANSACTIONS LIST BINDING
+// =============================================================================
+
+class TransactionsListBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<TransactionsListController>(
+      () => TransactionsListController(),
+    );
+    Get.lazyPut<AdminLayoutController>(() => AdminLayoutController());
+  }
+}
+
+// =============================================================================
+// TRANSACTION DETAILS BINDING
+// =============================================================================
+
+class TransactionDetailsBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<TransactionDetailsController>(
+      () => TransactionDetailsController(),
+    );
+    Get.lazyPut<AdminLayoutController>(() => AdminLayoutController());
+  }
+}
+
 // =============================================================================
 // DRIVERS LIST BINDING
 // =============================================================================
@@ -77,5 +110,29 @@ class DriverDetailsBinding extends Bindings {
   void dependencies() {
     Get.lazyPut<DriverDetailsController>(() => DriverDetailsController());
     Get.lazyPut<AdminLayoutController>(() => AdminLayoutController());
+  }
+}
+
+// =============================================================================
+// STUDENTS LIST BINDING
+// =============================================================================
+
+class StudentsListBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AdminLayoutController>(() => AdminLayoutController());
+    Get.lazyPut<StudentsListController>(() => StudentsListController());
+  }
+}
+
+// =============================================================================
+// STUDENTS DETAILS BINDING
+// =============================================================================
+
+class StudentDetailsBinding extends Bindings {
+  @override
+  void dependencies() {
+    Get.lazyPut<AdminLayoutController>(() => AdminLayoutController());
+    Get.lazyPut<StudentDetailsController>(() => StudentDetailsController());
   }
 }

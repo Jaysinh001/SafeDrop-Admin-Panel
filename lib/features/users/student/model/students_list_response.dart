@@ -44,84 +44,72 @@ class StudentsListResponse {
 }
 
 class Student {
-    final int? id;
+    final int? studentId;
     final String? phoneNumber;
     final String? email;
     final String? studentName;
-    final String? address;
-    final int? uniqueCodeId;
     final int? proposedFee;
     final bool? accountActive;
-    final String? profilePicture;
-    final DateTime? createdAt;
-    final DateTime? updatedAt;
+    final int? driverId;
+    final String? driverName;
+    final String? driverCode;
 
     Student({
-        this.id,
+        this.studentId,
         this.phoneNumber,
         this.email,
         this.studentName,
-        this.address,
-        this.uniqueCodeId,
         this.proposedFee,
         this.accountActive,
-        this.profilePicture,
-        this.createdAt,
-        this.updatedAt,
+        this.driverId,
+        this.driverName,
+        this.driverCode,
     });
 
     Student copyWith({
-        int? id,
+        int? studentId,
         String? phoneNumber,
         String? email,
         String? studentName,
-        String? address,
-        int? uniqueCodeId,
         int? proposedFee,
         bool? accountActive,
-        String? profilePicture,
-        DateTime? createdAt,
-        DateTime? updatedAt,
+        int? driverId,
+        String? driverName,
+        String? driverCode,
     }) => 
         Student(
-            id: id ?? this.id,
+            studentId: studentId ?? this.studentId,
             phoneNumber: phoneNumber ?? this.phoneNumber,
             email: email ?? this.email,
             studentName: studentName ?? this.studentName,
-            address: address ?? this.address,
-            uniqueCodeId: uniqueCodeId ?? this.uniqueCodeId,
             proposedFee: proposedFee ?? this.proposedFee,
             accountActive: accountActive ?? this.accountActive,
-            profilePicture: profilePicture ?? this.profilePicture,
-            createdAt: createdAt ?? this.createdAt,
-            updatedAt: updatedAt ?? this.updatedAt,
+            driverId: driverId ?? this.driverId,
+            driverName: driverName ?? this.driverName,
+            driverCode: driverCode ?? this.driverCode,
         );
 
     factory Student.fromJson(Map<String, dynamic> json) => Student(
-        id: json["id"],
+        studentId: json["student_id"],
         phoneNumber: json["phone_number"],
         email: json["email"],
         studentName: json["student_name"],
-        address: json["address"],
-        uniqueCodeId: json["unique_code_id"],
         proposedFee: json["proposed_fee"],
         accountActive: json["account_active"],
-        profilePicture: json["profile_picture"],
-        createdAt: json["created_at"] == null ? null : DateTime.parse(json["created_at"]),
-        updatedAt: json["updated_at"] == null ? null : DateTime.parse(json["updated_at"]),
+        driverId: json["driver_id"],
+        driverName: json["driver_name"],
+        driverCode: json["driver_code"],
     );
 
     Map<String, dynamic> toJson() => {
-        "id": id,
+        "student_id": studentId,
         "phone_number": phoneNumber,
         "email": email,
         "student_name": studentName,
-        "address": address,
-        "unique_code_id": uniqueCodeId,
         "proposed_fee": proposedFee,
         "account_active": accountActive,
-        "profile_picture": profilePicture,
-        "created_at": createdAt?.toIso8601String(),
-        "updated_at": updatedAt?.toIso8601String(),
+        "driver_id": driverId,
+        "driver_name": driverName,
+        "driver_code": driverCode,
     };
 }

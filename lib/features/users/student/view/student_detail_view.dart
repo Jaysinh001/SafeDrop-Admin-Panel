@@ -1,7 +1,3 @@
-// =============================================================================
-// DRIVER DETAILS VIEW
-// =============================================================================
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -9,25 +5,28 @@ import '../../../../shared/widgets/loading_view.dart';
 import '../controller/student_detail_controller.dart';
 import '../model/student_details_response.dart';
 
-class DriverDetailsView extends GetView<DriverDetailsController> {
-  const DriverDetailsView({super.key});
+// Note: Import your actual model classes and controller
+// import 'package:your_app/models/student_details_response.dart';
+// import 'package:your_app/controllers/student_details_controller.dart';
+
+// =============================================================================
+// STUDENT DETAILS VIEW
+// =============================================================================
+
+class StudentDetailsView extends GetView<StudentDetailsController> {
+  const StudentDetailsView({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       body: Obx(() {
-        if (controller.isLoading) {
-          return const LoadingView(title: 'Loading driver details...');
-        }
-
-        if (controller.driverDetails == null) {
-          return _buildErrorState();
-        }
+        if (controller.isLoading) return const LoadingView(title: "Loading Student Details...",);
+        if (controller.studentDetails == null) return _buildErrorState();
 
         return Column(
           children: [
-            _buildDriverHeader(context),
+            _buildStudentHeader(context),
             _buildTabBar(context),
             Expanded(child: _buildTabContent(context)),
           ],
@@ -37,159 +36,114 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
     );
   }
 
-  Widget _buildDriverHeader(BuildContext context) {
-    final driver = controller.driver;
-
+  Widget _buildStudentHeader(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        boxShadow: [
-          BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2))],
       ),
       child: Column(
         children: [
-          // Back button and actions row
           Row(
             children: [
-              IconButton(
-                onPressed: () => Get.back(),
-                icon: const Icon(Icons.arrow_back),
-              ),
+              IconButton(onPressed: () => Get.back(), icon: const Icon(Icons.arrow_back)),
               const Spacer(),
               if (context.width > 768) _buildActionButtons(),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // Driver profile section
-          context.width > 768
-              ? _buildDesktopProfile(driver)
-              : _buildMobileProfile(driver),
+          context.width > 768 ? _buildDesktopProfile() : _buildMobileProfile(),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopProfile(Driver? driver) {
+  Widget _buildDesktopProfile() {
+    final student = controller.student;
     return Row(
       children: [
-        // Profile image
         CircleAvatar(
           radius: 50,
-          backgroundImage:
-              driver?.profilePicture != null
-                  ? NetworkImage(driver!.profilePicture!)
-                  : null,
+          backgroundImage: student?.profilePicture != null ? NetworkImage(student!.profilePicture!) : null,
           backgroundColor: Colors.blue.withOpacity(0.1),
-          child:
-              driver?.profilePicture == null
-                  ? Text(
-                    (driver?.driverName ?? 'N')[0].toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  )
-                  : null,
+          child: student?.profilePicture == null
+              ? Text(
+                  (student?.studentName ?? 'N')[0].toUpperCase(),
+                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.blue),
+                )
+              : null,
         ),
-
         const SizedBox(width: 24),
-
-        // Driver info
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                driver?.driverName ?? 'Unknown Driver',
-                style: Get.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                student?.studentName ?? 'Unknown Student',
+                style: Get.textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 4),
               Text(
-                'Driver ID: ${driver?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                style: Get.textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                'Student ID: ${student?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
+                style: Get.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   _buildStatusChip(),
-                  const SizedBox(width: 12),
-                  if (driver?.email != null) ...[
+                  if (student?.email != null) ...[
+                    const SizedBox(width: 12),
                     Icon(Icons.email, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(driver!.email!),
-                    const SizedBox(width: 16),
+                    Text(student!.email!),
                   ],
-                  if (driver?.phoneNumber != null) ...[
+                  if (student?.phoneNumber != null) ...[
+                    const SizedBox(width: 16),
                     Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
-                    Text(driver!.phoneNumber!),
+                    Text(student!.phoneNumber!),
                   ],
                 ],
               ),
             ],
           ),
         ),
-
-        // Wallet info
-        if (controller.wallet != null)
-          _WalletSummaryCard(wallet: controller.wallet!),
+        if (controller.creditBalance != null)
+          _CreditBalanceCard(creditBalance: controller.creditBalance!),
       ],
     );
   }
 
-  Widget _buildMobileProfile(Driver? driver) {
+  Widget _buildMobileProfile() {
+    final student = controller.student;
     return Column(
       children: [
-        // Profile image and basic info
         Row(
           children: [
             CircleAvatar(
               radius: 40,
-              backgroundImage:
-                  driver?.profilePicture != null
-                      ? NetworkImage(driver!.profilePicture!)
-                      : null,
+              backgroundImage: student?.profilePicture != null ? NetworkImage(student!.profilePicture!) : null,
               backgroundColor: Colors.blue.withOpacity(0.1),
-              child:
-                  driver?.profilePicture == null
-                      ? Text(
-                        (driver?.driverName ?? 'N')[0].toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      )
-                      : null,
+              child: student?.profilePicture == null
+                  ? Text(
+                      (student?.studentName ?? 'N')[0].toUpperCase(),
+                      style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
+                    )
+                  : null,
             ),
-
             const SizedBox(width: 16),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    driver?.driverName ?? 'Unknown Driver',
-                    style: Get.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    student?.studentName ?? 'Unknown Student',
+                    style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
                   Text(
-                    'ID: ${driver?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                    style: Get.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    'ID: ${student?.id} • ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
+                    style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
                   _buildStatusChip(),
@@ -198,46 +152,38 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
             ),
           ],
         ),
-
-        const SizedBox(height: 16),
-
-        // Contact info
-        if (driver?.email != null || driver?.phoneNumber != null)
+        if (student?.email != null || student?.phoneNumber != null) ...[
+          const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
-            ),
+            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
             child: Column(
               children: [
-                if (driver?.email != null) ...[
+                if (student?.email != null)
                   Row(
                     children: [
                       Icon(Icons.email, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(driver!.email!)),
+                      Expanded(child: Text(student!.email!)),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                ],
-                if (driver?.phoneNumber != null)
+                if (student?.email != null && student?.phoneNumber != null) const SizedBox(height: 8),
+                if (student?.phoneNumber != null)
                   Row(
                     children: [
                       Icon(Icons.phone, size: 16, color: Colors.grey[600]),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(driver!.phoneNumber!)),
+                      Text(student!.phoneNumber!),
                     ],
                   ),
               ],
             ),
           ),
-
-        const SizedBox(height: 16),
-
-        // Wallet summary for mobile
-        if (controller.wallet != null)
-          _WalletSummaryCard(wallet: controller.wallet!, isCompact: true),
+        ],
+        if (controller.creditBalance != null) ...[
+          const SizedBox(height: 16),
+          _CreditBalanceCard(creditBalance: controller.creditBalance!, isCompact: true),
+        ],
       ],
     );
   }
@@ -256,14 +202,11 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: controller.statusColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: controller.statusColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
-            controller.driverStatus,
+            controller.studentStatus,
             style: TextStyle(
               color: controller.statusColor,
               fontWeight: FontWeight.w600,
@@ -280,7 +223,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
       mainAxisSize: MainAxisSize.min,
       children: [
         ElevatedButton.icon(
-          onPressed: controller.contactDriver,
+          onPressed: controller.contactStudent,
           icon: const Icon(Icons.phone, size: 16),
           label: const Text('Call'),
           style: ElevatedButton.styleFrom(
@@ -296,13 +239,13 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.editDriver,
+          onPressed: controller.editStudent,
           icon: const Icon(Icons.edit, size: 16),
           label: const Text('Edit'),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.suspendDriver,
+          onPressed: controller.suspendStudent,
           icon: const Icon(Icons.block, size: 16),
           label: const Text('Suspend'),
           style: ElevatedButton.styleFrom(
@@ -317,10 +260,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
   Widget _buildTabBar(BuildContext context) {
     return Container(
       color: Colors.white,
-      child:
-          context.width > 768
-              ? _buildDesktopTabBar(context)
-              : _buildMobileTabBar(),
+      child: context.width > 768 ? _buildDesktopTabBar(context) : _buildMobileTabBar(),
     );
   }
 
@@ -347,37 +287,26 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
   }
 
   Widget _buildMobileTabBar() {
-    return Obx(
-      () => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children:
-              controller.tabTitles.asMap().entries.map((entry) {
-                final index = entry.key;
-                final title = entry.value;
-                final isSelected = controller.selectedTab == index;
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(title),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) controller.setSelectedTab(index);
-                    },
-                    selectedColor: Colors.blue.withOpacity(0.2),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.blue : Colors.grey[700],
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
-                  ),
-                );
-              }).toList(),
-        ),
-      ),
-    );
+    return Obx(() => SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: controller.tabTitles.asMap().entries.map((entry) {
+              final isSelected = controller.selectedTab == entry.key;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(entry.value),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) controller.setSelectedTab(entry.key);
+                  },
+                  selectedColor: Colors.blue.withOpacity(0.2),
+                ),
+              );
+            }).toList(),
+          ),
+        ));
   }
 
   Widget _buildTabContent(BuildContext context) {
@@ -386,16 +315,11 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
         case 0:
           return _OverviewTab(controller: controller);
         case 1:
-          return _WalletTab(wallet: controller.wallet);
+          return _TransactionsTab(controller: controller);
         case 2:
-          return _BankDetailsTab(bankDetails: controller.bankDetails);
+          return _CreditBalanceTab(controller: controller);
         case 3:
-          return _VehiclesTab(vehicles: controller.vehicles);
-        case 4:
-          return _ActivityTab(
-            driver: controller.driver,
-            fcmToken: controller.fcmToken,
-          );
+          return _ActivityTab(controller: controller);
         default:
           return _OverviewTab(controller: controller);
       }
@@ -403,22 +327,15 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
   }
 
   Widget _buildFloatingActions() {
-    return Builder(
-      builder: (context) {
-        if (Get.width <= 768) {
-          return FloatingActionButton(
-            onPressed: () {
-              _showMobileActionsSheet();
-            },
+    return Builder(builder:(context) =>  Get.width <= 768
+        ? FloatingActionButton(
+            onPressed: _showMobileActionsSheet,
             child: const Icon(Icons.more_vert),
-          );
-        }
-        return FloatingActionButton(
-          onPressed: controller.refreshData,
-          child: const Icon(Icons.refresh),
-        );
-      },
-    );
+          )
+        : FloatingActionButton(
+            onPressed: controller.refreshData,
+            child: const Icon(Icons.refresh),
+          ));
   }
 
   void _showMobileActionsSheet() {
@@ -434,10 +351,10 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
             children: [
               ListTile(
                 leading: const Icon(Icons.phone, color: Colors.green),
-                title: const Text('Call Driver'),
+                title: const Text('Call Student'),
                 onTap: () {
                   Get.back();
-                  controller.contactDriver();
+                  controller.contactStudent();
                 },
               ),
               ListTile(
@@ -449,19 +366,27 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.edit, color: Colors.orange),
-                title: const Text('Edit Driver'),
+                leading: const Icon(Icons.payment, color: Colors.green),
+                title: const Text('Record Payment'),
                 onTap: () {
                   Get.back();
-                  controller.editDriver();
+                  controller.recordPayment();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit, color: Colors.orange),
+                title: const Text('Edit Student'),
+                onTap: () {
+                  Get.back();
+                  controller.editStudent();
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.block, color: Colors.red),
-                title: const Text('Suspend Driver'),
+                title: const Text('Suspend Student'),
                 onTap: () {
                   Get.back();
-                  controller.suspendDriver();
+                  controller.suspendStudent();
                 },
               ),
               ListTile(
@@ -486,7 +411,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          const Text('Failed to load driver details'),
+          const Text('Failed to load student details'),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: controller.refreshData,
@@ -499,40 +424,22 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
 }
 
 // =============================================================================
-// WALLET SUMMARY CARD
+// CREDIT BALANCE CARD WIDGET
 // =============================================================================
 
-class _WalletSummaryCard extends StatelessWidget {
-  final Wallet wallet;
+class _CreditBalanceCard extends StatelessWidget {
+  final StudentCreditBalance creditBalance;
   final bool isCompact;
 
-  const _WalletSummaryCard({required this.wallet, this.isCompact = false});
+  const _CreditBalanceCard({
+    required this.creditBalance,
+    this.isCompact = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    if (isCompact) {
-      return Row(
-        children: [
-          Expanded(
-            child: _buildBalanceCard(
-              'Available',
-              wallet.availableBalance ?? 0,
-              Colors.green,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _buildBalanceCard(
-              'Pending',
-              wallet.pendingBalance ?? 0,
-              Colors.orange,
-            ),
-          ),
-        ],
-      );
-    }
-
     return Container(
+      width: isCompact ? double.infinity : null,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -541,65 +448,30 @@ class _WalletSummaryCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: isCompact
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           const Text(
-            'Wallet Balance',
+            'Credit Balance',
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 4),
           Text(
-            '₹${wallet.availableBalance ?? 0}',
+            '₹${creditBalance.credit ?? 0}',
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Pending: ₹${wallet.pendingBalance ?? 0}',
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(String label, int amount, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '₹$amount',
-            style: TextStyle(
-              color: color,
-              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -614,7 +486,7 @@ class _WalletSummaryCard extends StatelessWidget {
 // =============================================================================
 
 class _OverviewTab extends StatelessWidget {
-  final DriverDetailsController controller;
+  final StudentDetailsController controller;
 
   const _OverviewTab({required this.controller});
 
@@ -622,56 +494,49 @@ class _OverviewTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
-      child:
-          context.width > 1024 ? _buildDesktopLayout() : _buildMobileLayout(),
-    );
-  }
-
-  Widget _buildDesktopLayout() {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 2,
-          child: Column(
-            children: [
-              _buildPersonalInfoCard(),
-              const SizedBox(height: 16),
-              _buildAccountStatusCard(),
-            ],
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          flex: 1,
-          child: Column(
-            children: [
-              _buildQuickStatsCard(),
-              const SizedBox(height: 16),
-              _buildRecentActivityCard(),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMobileLayout() {
-    return Column(
-      children: [
-        _buildPersonalInfoCard(),
-        const SizedBox(height: 16),
-        _buildAccountStatusCard(),
-        const SizedBox(height: 16),
-        _buildQuickStatsCard(),
-        const SizedBox(height: 16),
-        _buildRecentActivityCard(),
-      ],
+      child: context.width > 1024
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: Column(
+                    children: [
+                      _buildPersonalInfoCard(),
+                      const SizedBox(height: 16),
+                      _buildDriverInfoCard(),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      _buildQuickStatsCard(),
+                      const SizedBox(height: 16),
+                      _buildPaymentSummaryCard(),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                _buildQuickStatsCard(),
+                const SizedBox(height: 16),
+                _buildPersonalInfoCard(),
+                const SizedBox(height: 16),
+                _buildDriverInfoCard(),
+                const SizedBox(height: 16),
+                _buildPaymentSummaryCard(),
+              ],
+            ),
     );
   }
 
   Widget _buildPersonalInfoCard() {
-    final driver = controller.driver;
+    final student = controller.student;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -680,40 +545,24 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Personal Information',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildInfoRow(
-              Icons.person,
-              'Full Name',
-              driver?.driverName ?? 'N/A',
-            ),
-            _buildInfoRow(Icons.email, 'Email', driver?.email ?? 'N/A'),
-            _buildInfoRow(Icons.phone, 'Phone', driver?.phoneNumber ?? 'N/A'),
-            _buildInfoRow(
-              Icons.badge,
-              'Unique Code',
-              controller.uniqueCode?.uniqueCode ?? 'N/A',
-            ),
-            _buildInfoRow(
-              Icons.calendar_today,
-              'Joined',
-              _formatDate(driver?.createdAt),
-            ),
-            _buildInfoRow(
-              Icons.update,
-              'Last Updated',
-              _formatDate(driver?.updatedAt),
-            ),
+            _buildInfoRow(Icons.person, 'Full Name', student?.studentName ?? 'N/A'),
+            _buildInfoRow(Icons.email, 'Email', student?.email ?? 'N/A'),
+            _buildInfoRow(Icons.phone, 'Phone', student?.phoneNumber ?? 'N/A'),
+            _buildInfoRow(Icons.location_on, 'Address', student?.address ?? 'N/A'),
+            _buildInfoRow(Icons.badge, 'Unique Code', controller.uniqueCode?.uniqueCode ?? 'N/A'),
+            _buildInfoRow(Icons.currency_rupee, 'Proposed Fee', '₹${student?.proposedFee ?? 0}'),
+            _buildInfoRow(Icons.calendar_today, 'Joined', _formatDate(student?.createdAt)),
+            _buildInfoRow(Icons.update, 'Last Updated', _formatDate(student?.updatedAt)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAccountStatusCard() {
+  Widget _buildDriverInfoCard() {
     final driver = controller.driver;
     return Card(
       child: Padding(
@@ -721,19 +570,39 @@ class _OverviewTab extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Account Status',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Text(
+                  'Assigned Driver',
+                  style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const Spacer(),
+                if (driver != null)
+                  TextButton.icon(
+                    onPressed: controller.viewDriverDetails,
+                    icon: const Icon(Icons.visibility, size: 16),
+                    label: const Text('View Details'),
+                  ),
+              ],
             ),
             const SizedBox(height: 16),
-            _buildStatusItem('Bank Details', driver?.hasBankDetails ?? false),
-            _buildStatusItem('MPIN Set', driver?.mpinSet ?? false),
-            _buildStatusItem(
-              'Profile Complete',
-              (driver?.hasBankDetails ?? false) && (driver?.mpinSet ?? false),
-            ),
+            if (driver != null) ...[
+              _buildInfoRow(Icons.person, 'Driver Name', driver.driverName ?? 'N/A'),
+              _buildInfoRow(Icons.email, 'Email', driver.email ?? 'N/A'),
+              _buildInfoRow(Icons.phone, 'Phone', driver.phoneNumber ?? 'N/A'),
+              _buildInfoRow(Icons.check_circle, 'Bank Details',
+                  driver.hasBankDetails == true ? 'Yes' : 'No'),
+              _buildInfoRow(Icons.lock, 'MPIN Set', driver.mpinSet == true ? 'Yes' : 'No'),
+            ] else
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(20),
+                  child: Text(
+                    'No driver assigned yet',
+                    style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -748,34 +617,22 @@ class _OverviewTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Quick Stats',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              'Quick Statistics',
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            _buildStatItem(
-              'Bank Accounts',
-              '${controller.bankDetails.length}',
-              Icons.account_balance,
-            ),
-            _buildStatItem(
-              'Vehicles',
-              '${controller.vehicles.length}',
-              Icons.directions_car,
-            ),
-            _buildStatItem(
-              'Wallet Balance',
-              '₹${controller.wallet?.availableBalance ?? 0}',
-              Icons.account_balance_wallet,
-            ),
+            _buildStatItem('Total Paid', '₹${controller.totalPaid}', Icons.check_circle, Colors.green),
+            _buildStatItem('Total Pending', '₹${controller.totalPending}', Icons.schedule, Colors.orange),
+            _buildStatItem('Completed', '${controller.completedTransactions}', Icons.done_all, Colors.blue),
+            _buildStatItem('Pending', '${controller.pendingTransactions}', Icons.pending, Colors.orange),
+            _buildStatItem('Failed', '${controller.failedTransactions}', Icons.error, Colors.red),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRecentActivityCard() {
+  Widget _buildPaymentSummaryCard() {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -783,30 +640,40 @@ class _OverviewTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Device Information',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              'Payment Summary',
+              style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            if (controller.fcmToken != null) ...[
-              _buildInfoRow(
-                Icons.phone_android,
-                'Platform',
-                controller.fcmToken!.platform?.toUpperCase() ?? 'Unknown',
+            _buildPaymentRow('Proposed Fee', controller.student?.proposedFee ?? 0, Colors.blue),
+            _buildPaymentRow('Credit Balance', controller.creditBalance?.credit ?? 0, Colors.green),
+            const Divider(height: 24),
+            _buildPaymentRow(
+              'Due Amount',
+              controller.dueAmount,
+              controller.dueAmount > 0 ? Colors.red : Colors.green,
+              isBold: true,
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: controller.recordPayment,
+                icon: const Icon(Icons.payment),
+                label: const Text('Record Payment'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
-              _buildInfoRow(
-                Icons.circle,
-                'Status',
-                controller.fcmToken!.isActive == true ? 'Active' : 'Inactive',
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: controller.sendPaymentReminder,
+                icon: const Icon(Icons.notification_important),
+                label: const Text('Send Reminder'),
               ),
-              _buildInfoRow(
-                Icons.access_time,
-                'Last Active',
-                _formatDate(controller.fcmToken!.lastUsedAt),
-              ),
-            ] else
-              const Center(child: Text('No device information available')),
+            ),
           ],
         ),
       ),
@@ -831,10 +698,7 @@ class _OverviewTab extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                 ),
               ],
             ),
@@ -844,24 +708,7 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusItem(String label, bool isComplete) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Icon(
-            isComplete ? Icons.check_circle : Icons.cancel,
-            color: isComplete ? Colors.green : Colors.red,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(label, style: const TextStyle(fontSize: 14)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem(String label, String value, IconData icon) {
+  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -869,29 +716,46 @@ class _OverviewTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: Colors.blue, size: 20),
+            child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                ),
+                Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
                 const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPaymentRow(String label, int amount, Color color, {bool isBold = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            '₹$amount',
+            style: TextStyle(
+              fontSize: isBold ? 18 : 14,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: color,
             ),
           ),
         ],
@@ -906,80 +770,287 @@ class _OverviewTab extends StatelessWidget {
 }
 
 // =============================================================================
-// WALLET TAB
+// TRANSACTIONS TAB
 // =============================================================================
 
-class _WalletTab extends StatelessWidget {
-  final Wallet? wallet;
+class _TransactionsTab extends StatelessWidget {
+  final StudentDetailsController controller;
 
-  const _WalletTab({this.wallet});
+  const _TransactionsTab({required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    if (wallet == null) {
-      return const Center(child: Text('No wallet information available'));
+    return Column(
+      children: [
+        _buildFilterBar(),
+        Expanded(
+          child: Obx(() {
+            final transactions = controller.filteredTransactions;
+            if (transactions.isEmpty) {
+              return const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.receipt_long, size: 64, color: Colors.grey),
+                    SizedBox(height: 16),
+                    Text('No transactions found'),
+                  ],
+                ),
+              );
+            }
+            return ListView.builder(
+              padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+              itemCount: transactions.length,
+              itemBuilder: (context, index) => _TransactionCard(transaction: transactions[index]),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFilterBar() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      ),
+      child: Obx(() => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterChip('All', 'all'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Created', 'Created'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Success', 'Success'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Pending', 'Pending'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Failed', 'Failed'),
+              ],
+            ),
+          )),
+    );
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = controller.transactionFilter == value;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) controller.setTransactionFilter(value);
+      },
+      selectedColor: Colors.blue.withOpacity(0.2),
+      checkmarkColor: Colors.blue,
+    );
+  }
+}
+
+// =============================================================================
+// TRANSACTION CARD WIDGET
+// =============================================================================
+
+class _TransactionCard extends StatelessWidget {
+  final Transaction transaction;
+
+  const _TransactionCard({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _getStatusColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(_getStatusIcon(), color: _getStatusColor(), size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '₹${transaction.amount ?? 0}',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        _formatDateTime(transaction.timestamp),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+                _buildStatusChip(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _buildDetailRow('Transaction ID', '#${transaction.id}'),
+            _buildDetailRow('Reference', transaction.transactionRef ?? 'N/A'),
+            _buildDetailRow('Mode', _capitalizeFirst(transaction.transactionMode ?? 'N/A')),
+            if (transaction.driverId != null)
+              _buildDetailRow('Driver ID', '${transaction.driverId}'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: _getStatusColor().withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _getStatusColor().withOpacity(0.3)),
+      ),
+      child: Text(
+        _capitalizeFirst(transaction.status ?? 'Unknown'),
+        style: TextStyle(
+          color: _getStatusColor(),
+          fontWeight: FontWeight.w600,
+          fontSize: 11,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor() {
+    switch (transaction.status?.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'failed':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
+  }
+
+  IconData _getStatusIcon() {
+    switch (transaction.status?.toLowerCase()) {
+      case 'completed':
+        return Icons.check_circle;
+      case 'pending':
+        return Icons.schedule;
+      case 'failed':
+        return Icons.error;
+      default:
+        return Icons.help;
+    }
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
+  }
+
+  String _formatDateTime(DateTime? date) {
+    if (date == null) return 'N/A';
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+// =============================================================================
+// CREDIT BALANCE TAB
+// =============================================================================
+
+class _CreditBalanceTab extends StatelessWidget {
+  final StudentDetailsController controller;
+
+  const _CreditBalanceTab({required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    final creditBalance = controller.creditBalance;
+    final student = controller.student;
 
     return SingleChildScrollView(
       padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
       child: Column(
         children: [
-          // Balance cards
-          context.width > 768
-              ? Row(
-                children: [
-                  Expanded(
-                    child: _buildBalanceCard(
-                      'Available Balance',
-                      wallet!.availableBalance ?? 0,
-                      Colors.green,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildBalanceCard(
-                      'Pending Balance',
-                      wallet!.pendingBalance ?? 0,
-                      Colors.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildBalanceCard(
-                      'Total Balance',
-                      (wallet!.availableBalance ?? 0) +
-                          (wallet!.pendingBalance ?? 0),
-                      Colors.blue,
-                    ),
-                  ),
-                ],
-              )
-              : Column(
-                children: [
-                  _buildBalanceCard(
-                    'Available Balance',
-                    wallet!.availableBalance ?? 0,
-                    Colors.green,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBalanceCard(
-                    'Pending Balance',
-                    wallet!.pendingBalance ?? 0,
-                    Colors.orange,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildBalanceCard(
-                    'Total Balance',
-                    (wallet!.availableBalance ?? 0) +
-                        (wallet!.pendingBalance ?? 0),
-                    Colors.blue,
-                  ),
-                ],
+          // Large Balance Display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                const Text(
+                  'Current Credit Balance',
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '₹${creditBalance?.credit ?? 0}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Last updated: ${_formatDateTime(creditBalance?.updatedAt)}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          
           const SizedBox(height: 24),
-
-          // Wallet info
+          
+          // Balance Information Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -987,20 +1058,62 @@ class _WalletTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Wallet Information',
-                    style: Get.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    'Balance Information',
+                    style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  _buildWalletInfoRow('Wallet ID', '${wallet!.id ?? 'N/A'}'),
-                  _buildWalletInfoRow(
-                    'Driver ID',
-                    '${wallet!.driverId ?? 'N/A'}',
+                  _buildBalanceRow('Proposed Monthly Fee', student?.proposedFee ?? 0, Colors.blue),
+                  _buildBalanceRow('Current Credit', creditBalance?.credit ?? 0, Colors.green),
+                  const Divider(height: 24),
+                  _buildBalanceRow(
+                    'Amount Due',
+                    controller.dueAmount,
+                    controller.dueAmount > 0 ? Colors.red : Colors.green,
+                    isBold: true,
                   ),
-                  _buildWalletInfoRow(
-                    'Last Updated',
-                    _formatDate(wallet!.updatedAt),
+                ],
+              ),
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Payment Options Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Payment Options',
+                    style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: controller.recordPayment,
+                      icon: const Icon(Icons.payment),
+                      label: const Text('Record New Payment'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: controller.sendPaymentReminder,
+                      icon: const Icon(Icons.notifications),
+                      label: const Text('Send Payment Reminder'),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1011,349 +1124,35 @@ class _WalletTab extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceCard(String title, int amount, Color color) {
-    return Card(
-      color: color.withOpacity(0.1),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.account_balance_wallet, color: color, size: 24),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: color,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '₹$amount',
-              style: TextStyle(
-                color: color,
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWalletInfoRow(String label, String value) {
+  Widget _buildBalanceRow(String label, int amount, Color color, {bool isBold = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           Text(
-            value,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            label,
+            style: TextStyle(
+              fontSize: isBold ? 16 : 14,
+              fontWeight: isBold ? FontWeight.w600 : FontWeight.normal,
+            ),
+          ),
+          Text(
+            '₹$amount',
+            style: TextStyle(
+              fontSize: isBold ? 20 : 16,
+              fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+              color: color,
+            ),
           ),
         ],
       ),
     );
   }
 
-  String _formatDate(DateTime? date) {
+  String _formatDateTime(DateTime? date) {
     if (date == null) return 'N/A';
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-// =============================================================================
-// BANK DETAILS TAB
-// =============================================================================
-
-class _BankDetailsTab extends StatelessWidget {
-  final List<BankDetail> bankDetails;
-
-  const _BankDetailsTab({required this.bankDetails});
-
-  @override
-  Widget build(BuildContext context) {
-    if (bankDetails.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.account_balance, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No bank details available'),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
-      itemCount: bankDetails.length,
-      itemBuilder: (context, index) {
-        final bank = bankDetails[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.account_balance,
-                        color: Colors.blue,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            bank.bankName ?? 'Unknown Bank',
-                            style: Get.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (bank.isPrimary == true)
-                            Container(
-                              margin: const EdgeInsets.only(top: 4),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: Colors.green.withOpacity(0.3),
-                                ),
-                              ),
-                              child: const Text(
-                                'PRIMARY',
-                                style: TextStyle(
-                                  color: Colors.green,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildBankDetailRow(
-                  'Account Holder',
-                  bank.accountHolder ?? 'N/A',
-                ),
-                _buildBankDetailRow(
-                  'Account Number',
-                  _maskAccountNumber(bank.accountNumber),
-                ),
-                _buildBankDetailRow('IFSC Code', bank.ifscCode ?? 'N/A'),
-                _buildBankDetailRow('Added On', _formatDate(bank.createdAt)),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildBankDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 140,
-            child: Text(
-              label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _maskAccountNumber(String? accountNumber) {
-    if (accountNumber == null || accountNumber.length < 4) return 'N/A';
-    final last4 = accountNumber.substring(accountNumber.length - 4);
-    return '****$last4';
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year}';
-  }
-}
-
-// =============================================================================
-// VEHICLES TAB
-// =============================================================================
-
-class _VehiclesTab extends StatelessWidget {
-  final List<Vehicle> vehicles;
-
-  const _VehiclesTab({required this.vehicles});
-
-  @override
-  Widget build(BuildContext context) {
-    if (vehicles.isEmpty) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.directions_car, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No vehicles assigned'),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
-      itemCount: vehicles.length,
-      itemBuilder: (context, index) {
-        final vehicle = vehicles[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.purple.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.directions_car,
-                        color: Colors.purple,
-                        size: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            vehicle.vehicleNumber ?? 'Unknown',
-                            style: Get.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              if (vehicle.isAssigned == true)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.green.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'ASSIGNED',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                _buildVehicleDetailRow('Type', vehicle.vehicleType ?? 'N/A'),
-                _buildVehicleDetailRow('Model', vehicle.model ?? 'N/A'),
-                _buildVehicleDetailRow('Color', vehicle.color ?? 'N/A'),
-                _buildVehicleDetailRow(
-                  'Owner ID',
-                  '${vehicle.ownerId ?? 'N/A'}',
-                ),
-                _buildVehicleDetailRow(
-                  'Assigned On',
-                  _formatDate(vehicle.createdAt),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildVehicleDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              label,
-              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year}';
   }
 }
 
@@ -1362,18 +1161,20 @@ class _VehiclesTab extends StatelessWidget {
 // =============================================================================
 
 class _ActivityTab extends StatelessWidget {
-  final Driver? driver;
-  final FcmToken? fcmToken;
+  final StudentDetailsController controller;
 
-  const _ActivityTab({this.driver, this.fcmToken});
+  const _ActivityTab({required this.controller});
 
   @override
   Widget build(BuildContext context) {
+    final student = controller.student;
+    final fcmToken = controller.fcmToken;
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Account Timeline Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -1382,20 +1183,18 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Account Timeline',
-                    style: Get.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
                   _buildTimelineItem(
                     'Account Created',
-                    driver?.createdAt,
+                    student?.createdAt,
                     Icons.person_add,
                     Colors.blue,
                   ),
                   _buildTimelineItem(
                     'Profile Updated',
-                    driver?.updatedAt,
+                    student?.updatedAt,
                     Icons.edit,
                     Colors.orange,
                   ),
@@ -1410,7 +1209,10 @@ class _ActivityTab extends StatelessWidget {
               ),
             ),
           ),
+          
           const SizedBox(height: 16),
+          
+          // Device & Platform Info Card
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -1419,31 +1221,23 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Device & Platform Info',
-                    style: Get.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: Get.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
                   if (fcmToken != null) ...[
-                    _buildDeviceInfoRow(
-                      'Platform',
-                      fcmToken!.platform?.toUpperCase() ?? 'Unknown',
-                    ),
+                    _buildDeviceInfoRow('Platform', fcmToken.platform?.toUpperCase() ?? 'Unknown'),
                     _buildDeviceInfoRow(
                       'Device Status',
-                      fcmToken!.isActive == true ? 'Active' : 'Inactive',
+                      fcmToken.isActive == true ? 'Active' : 'Inactive',
                     ),
-                    _buildDeviceInfoRow(
-                      'Last Used',
-                      _formatDateTime(fcmToken!.lastUsedAt),
-                    ),
-                    _buildDeviceInfoRow(
-                      'Token Created',
-                      _formatDateTime(fcmToken!.createdAt),
-                    ),
+                    _buildDeviceInfoRow('Last Used', _formatDateTime(fcmToken.lastUsedAt)),
+                    _buildDeviceInfoRow('Token Created', _formatDateTime(fcmToken.createdAt)),
                   ] else
                     const Center(
-                      child: Text('No device information available'),
+                      child: Text(
+                        'No device information available',
+                        style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+                      ),
                     ),
                 ],
               ),
@@ -1454,12 +1248,7 @@ class _ActivityTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTimelineItem(
-    String title,
-    DateTime? date,
-    IconData icon,
-    Color color,
-  ) {
+  Widget _buildTimelineItem(String title, DateTime? date, IconData icon, Color color) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -1479,10 +1268,7 @@ class _ActivityTab extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1501,7 +1287,6 @@ class _ActivityTab extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
             width: 120,
@@ -1526,3 +1311,4 @@ class _ActivityTab extends StatelessWidget {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }
+
