@@ -21,6 +21,7 @@ abstract class AppRoutes {
   static const driverDetails = '/driverDetails';
   static const studentsList = '/studentsList';
   static const studentDetails = '/studentDetails';
+  static const addDuePayment = '/addDuePayment';
 
   // Admin Panel Routes
   static const adminDashboard = '/admin';

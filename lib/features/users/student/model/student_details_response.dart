@@ -9,81 +9,86 @@ StudentDetailsResponse studentDetailsResponseFromJson(String str) => StudentDeta
 String studentDetailsResponseToJson(StudentDetailsResponse data) => json.encode(data.toJson());
 
 class StudentDetailsResponse {
-    final Details? details;
     final String? message;
+    final StudentDetails? studentDetails;
     final bool? success;
 
     StudentDetailsResponse({
-        this.details,
         this.message,
+        this.studentDetails,
         this.success,
     });
 
     StudentDetailsResponse copyWith({
-        Details? details,
         String? message,
+        StudentDetails? studentDetails,
         bool? success,
     }) => 
         StudentDetailsResponse(
-            details: details ?? this.details,
             message: message ?? this.message,
+            studentDetails: studentDetails ?? this.studentDetails,
             success: success ?? this.success,
         );
 
     factory StudentDetailsResponse.fromJson(Map<String, dynamic> json) => StudentDetailsResponse(
-        details: json["details"] == null ? null : Details.fromJson(json["details"]),
         message: json["message"],
+        studentDetails: json["student_details"] == null ? null : StudentDetails.fromJson(json["student_details"]),
         success: json["success"],
     );
 
     Map<String, dynamic> toJson() => {
-        "details": details?.toJson(),
         "message": message,
+        "student_details": studentDetails?.toJson(),
         "success": success,
     };
 }
 
-class Details {
+class StudentDetails {
     final Student? student;
     final Driver? driver;
     final List<Transaction>? transactions;
     final StudentCreditBalance? studentCreditBalance;
     final UniqueCode? uniqueCode;
     final FcmToken? fcmToken;
+    final List<DuePayment>? duePayments;
 
-    Details({
+    StudentDetails({
         this.student,
         this.driver,
         this.transactions,
         this.studentCreditBalance,
         this.uniqueCode,
         this.fcmToken,
+        this.duePayments,
     });
 
-    Details copyWith({
+    StudentDetails copyWith({
         Student? student,
         Driver? driver,
         List<Transaction>? transactions,
         StudentCreditBalance? studentCreditBalance,
         UniqueCode? uniqueCode,
         FcmToken? fcmToken,
+        List<DuePayment>? duePayments,
     }) => 
-        Details(
+        StudentDetails(
             student: student ?? this.student,
             driver: driver ?? this.driver,
             transactions: transactions ?? this.transactions,
             studentCreditBalance: studentCreditBalance ?? this.studentCreditBalance,
             uniqueCode: uniqueCode ?? this.uniqueCode,
             fcmToken: fcmToken ?? this.fcmToken,
+            duePayments: duePayments ?? this.duePayments,
         );
 
-    factory Details.fromJson(Map<String, dynamic> json) => Details(
+    factory StudentDetails.fromJson(Map<String, dynamic> json) => StudentDetails(
         student: json["student"] == null ? null : Student.fromJson(json["student"]),
         driver: json["driver"] == null ? null : Driver.fromJson(json["driver"]),
         transactions: json["transactions"] == null ? [] : List<Transaction>.from(json["transactions"]!.map((x) => Transaction.fromJson(x))),
         studentCreditBalance: json["student_credit_balance"] == null ? null : StudentCreditBalance.fromJson(json["student_credit_balance"]),
         uniqueCode: json["unique_code"] == null ? null : UniqueCode.fromJson(json["unique_code"]),
         fcmToken: json["fcm_token"] == null ? null : FcmToken.fromJson(json["fcm_token"]),
+        duePayments: json["due_payments"] == null ? [] : List<DuePayment>.from(json["due_payments"]!.map((x) => DuePayment.fromJson(x))),
     );
 
     Map<String, dynamic> toJson() => {
@@ -93,6 +98,7 @@ class Details {
         "student_credit_balance": studentCreditBalance?.toJson(),
         "unique_code": uniqueCode?.toJson(),
         "fcm_token": fcmToken?.toJson(),
+        "due_payments": duePayments == null ? [] : List<dynamic>.from(duePayments!.map((x) => x.toJson())),
     };
 }
 
@@ -176,6 +182,77 @@ class Driver {
         "role": role,
         "createdAt": createdAt?.toIso8601String(),
         "updatedAt": updatedAt?.toIso8601String(),
+    };
+}
+
+class DuePayment {
+    final int? id;
+    final int? studentId;
+    final int? driverId;
+    final int? amount;
+    final int? dueMonth;
+    final int? dueYear;
+    final String? status;
+    final DateTime? createdAt;
+    final DateTime? updatedAt;
+
+    DuePayment({
+        this.id,
+        this.studentId,
+        this.driverId,
+        this.amount,
+        this.dueMonth,
+        this.dueYear,
+        this.status,
+        this.createdAt,
+        this.updatedAt,
+    });
+
+    DuePayment copyWith({
+        int? id,
+        int? studentId,
+        int? driverId,
+        int? amount,
+        int? dueMonth,
+        int? dueYear,
+        String? status,
+        DateTime? createdAt,
+        DateTime? updatedAt,
+    }) => 
+        DuePayment(
+            id: id ?? this.id,
+            studentId: studentId ?? this.studentId,
+            driverId: driverId ?? this.driverId,
+            amount: amount ?? this.amount,
+            dueMonth: dueMonth ?? this.dueMonth,
+            dueYear: dueYear ?? this.dueYear,
+            status: status ?? this.status,
+            createdAt: createdAt ?? this.createdAt,
+            updatedAt: updatedAt ?? this.updatedAt,
+        );
+
+    factory DuePayment.fromJson(Map<String, dynamic> json) => DuePayment(
+        id: json["id"],
+        studentId: json["student_id"],
+        driverId: json["driver_id"],
+        amount: json["amount"],
+        dueMonth: json["due_month"],
+        dueYear: json["due_year"],
+        status: json["status"],
+        createdAt: json["created_at"] == null ? null : DateTime.parse(json["created_at"]),
+        updatedAt: json["updated_at"] == null ? null : DateTime.parse(json["updated_at"]),
+    );
+
+    Map<String, dynamic> toJson() => {
+        "id": id,
+        "student_id": studentId,
+        "driver_id": driverId,
+        "amount": amount,
+        "due_month": dueMonth,
+        "due_year": dueYear,
+        "status": status,
+        "created_at": createdAt?.toIso8601String(),
+        "updated_at": updatedAt?.toIso8601String(),
     };
 }
 

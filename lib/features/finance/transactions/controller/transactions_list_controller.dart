@@ -200,8 +200,6 @@ class TransactionsListController extends GetxController {
 
     Get.toNamed(AppRoutes.transactionDetails, arguments: transaction);
 
-
-
     Get.snackbar(
       'Transaction Details',
       'Opening details for transaction #${transaction.id}',
@@ -212,6 +210,11 @@ class TransactionsListController extends GetxController {
   // View student details
   void viewStudentDetails(Transaction transaction) {
     // Navigate to student details
+    Get.toNamed(
+      AppRoutes.studentDetails,
+      arguments: {'id': transaction.studentId},
+    );
+
     Get.snackbar(
       'Student Details',
       'Opening details for ${transaction.studentName}',

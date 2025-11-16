@@ -12,18 +12,20 @@ import '../model/students_list_response.dart' as slr;
 
 class StudentDetailsController extends GetxController {
   // Reactive variables
-  final _studentDetails = Rx<Details?>(null);
+  final _studentDetails = Rx<StudentDetails?>(null);
   final _isLoading = false.obs;
   final _selectedTab = 0.obs;
   final _studentId = 0.obs;
   final _transactionFilter = 'all'.obs;
 
   // Getters
-  Details? get studentDetails => _studentDetails.value;
+  StudentDetails? get studentDetails => _studentDetails.value;
   Student? get student => _studentDetails.value?.student;
   Driver? get driver => _studentDetails.value?.driver;
-  List<Transaction> get transactions => _studentDetails.value?.transactions ?? [];
-  StudentCreditBalance? get creditBalance => _studentDetails.value?.studentCreditBalance;
+  List<Transaction> get transactions =>
+      _studentDetails.value?.transactions ?? [];
+  StudentCreditBalance? get creditBalance =>
+      _studentDetails.value?.studentCreditBalance;
   UniqueCode? get uniqueCode => _studentDetails.value?.uniqueCode;
   FcmToken? get fcmToken => _studentDetails.value?.fcmToken;
   bool get isLoading => _isLoading.value;
@@ -35,8 +37,9 @@ class StudentDetailsController extends GetxController {
   final List<String> tabTitles = [
     'Overview',
     'Transactions',
+    'Fees History',
     'Credit Balance',
-    'Activity'
+    'Activity',
   ];
 
   @override
@@ -55,20 +58,15 @@ class StudentDetailsController extends GetxController {
   // Load student details from API
   Future<void> loadStudentDetails() async {
     _isLoading.value = true;
-    
+
     try {
-      
-     final res = await NetworkServicesApi().getApi(
+      final res = await NetworkServicesApi().getApi(
         path: 'student/details/${_studentId.value}',
-        // path: 'driver/details/1',
       );
 
       final response = studentDetailsResponseFromJson(res);
 
-      _studentDetails.value = response.details;
-      
-     
-      
+      _studentDetails.value = response.studentDetails;
     } catch (e) {
       Get.snackbar(
         'Error',
@@ -96,9 +94,12 @@ class StudentDetailsController extends GetxController {
     if (_transactionFilter.value == 'all') {
       return transactions;
     }
-    return transactions.where((t) => 
-      t.status?.toLowerCase() == _transactionFilter.value.toLowerCase()
-    ).toList();
+    return transactions
+        .where(
+          (t) =>
+              t.status?.toLowerCase() == _transactionFilter.value.toLowerCase(),
+        )
+        .toList();
   }
 
   // Refresh data
@@ -136,18 +137,70 @@ class StudentDetailsController extends GetxController {
 
   void viewDriverDetails() {
     if (driver != null) {
-      
       Get.toNamed(AppRoutes.driverDetails, arguments: {"id": driver?.id});
-      Get.snackbar('Driver Details', 'Opening details for ${driver?.driverName}');
+      Get.snackbar(
+        'Driver Details',
+        'Opening details for ${driver?.driverName}',
+      );
     }
   }
 
   void recordPayment() {
-    Get.snackbar('Record Payment', 'Payment recording functionality coming soon!');
+    Get.snackbar(
+      'Record Payment',
+      'Payment recording functionality coming soon!',
+    );
   }
 
   void sendPaymentReminder() {
     Get.snackbar('Payment Reminder', 'Payment reminder sent to student');
+  }
+
+  // Getter for sorted due payments (earliest to latest)
+  List<DuePayment> get sortedDuePayments {
+    // final payments = studentDetails?.duePayments ?? [];
+    // final sorted = payments.toList();
+    // sorted.sort((a, b) {
+    //   final yearCompare = (a.dueYear ?? 0).compareTo(b.dueYear ?? 0);
+    //   if (yearCompare != 0) return yearCompare;
+    //   return (a.dueMonth ?? 0).compareTo(b.dueMonth ?? 0);
+    // });
+
+    // return sorted;
+
+    return studentDetails?.duePayments ?? [];
+  }
+
+  // Getter for latest due payment
+  DuePayment? get latestDuePayment {
+    if (sortedDuePayments.isEmpty) return null;
+    return sortedDuePayments.last;
+  }
+
+  // Add new due payment
+  void addDuePayment({
+    required int amount,
+    required int dueMonth,
+    required int dueYear,
+    required String status,
+  }) {
+    // Implement API call to add due payment
+  }
+
+  // Update existing due payment
+  void updateDuePayment({
+    required int id,
+    required int amount,
+    required int dueMonth,
+    required int dueYear,
+    required String status,
+  }) {
+    // Implement API call to update due payment
+  }
+
+  // Delete due payment
+  void deleteDuePayment(int id) {
+    // Implement API call to delete due payment
   }
 
   // Get student status
@@ -185,15 +238,21 @@ class StudentDetailsController extends GetxController {
   }
 
   int get completedTransactions {
-    return transactions.where((t) => t.status?.toLowerCase() == 'completed').length;
+    return transactions
+        .where((t) => t.status?.toLowerCase() == 'completed')
+        .length;
   }
 
   int get pendingTransactions {
-    return transactions.where((t) => t.status?.toLowerCase() == 'pending').length;
+    return transactions
+        .where((t) => t.status?.toLowerCase() == 'pending')
+        .length;
   }
 
   int get failedTransactions {
-    return transactions.where((t) => t.status?.toLowerCase() == 'failed').length;
+    return transactions
+        .where((t) => t.status?.toLowerCase() == 'failed')
+        .length;
   }
 
   // Get due amount (proposed fee - credit balance)
