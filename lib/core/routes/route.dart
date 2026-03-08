@@ -1,194 +1,141 @@
-import 'package:get/get.dart';
-import 'package:safedrop_panel/features/users/driver/view/driver_detail_view.dart';
-
+import 'package:go_router/go_router.dart';
 import '../../features/auth/view/login_view.dart';
 import '../../features/dashboard/view/dashboard_view.dart';
 import '../../features/finance/transactions/view/transaction_details_view.dart';
 import '../../features/finance/transactions/view/transactions_list_view.dart';
 import '../../features/users/driver/view/drivers_list_view.dart';
+import '../../features/users/driver/view/driver_detail_view.dart';
 import '../../features/users/student/view/student_detail_view.dart';
 import '../../features/users/student/view/students_list_view.dart';
 import '../../features/finance/withdrawal/view/withdrawal_request_view.dart';
 import '../../shared/layout/view/admin_panel_layout.dart';
-import '../dependencies/bindings.dart';
+import '../../shared/widgets/error_screens.dart';
+import '../../shared/widgets/placeholder_view.dart';
+import '../../features/rbac/presentation/screens/rbac_dashboard_screen.dart';
+import '../../features/rbac/bloc/rbac_bloc.dart';
+import '../../features/rbac/data/repositories/rbac_repository.dart';
+import '../dependencies/injection_container.dart';
 import 'app_routes.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppPages {
-  // static const initial = AppRoutes.splash;
   static const initial = AppRoutes.login;
 
-  static final routes = [
-    // =======================================================================
-    // AUTHENTICATION ROUTES
-    // =======================================================================
-    GetPage(
-      name: AppRoutes.login,
-      page: () => const LoginView(),
-      binding: LoginBinding(),
-      
-      transition: Transition.rightToLeft,
-      transitionDuration: const Duration(milliseconds: 250),
-    ),
+  static final GoRouter router = GoRouter(
+    initialLocation: initial,
+    debugLogDiagnostics: true,
+    errorBuilder: (context, state) => const NotFoundScreen(),
+    routes: [
+      // Authentication Routes
+      GoRoute(
+        path: AppRoutes.login,
+        builder: (context, state) => const LoginView(),
+      ),
 
-    // =======================================================================
-    // MAIN LAYOUT ROUTES - Protected by AdminLayoutBinding
-    // =======================================================================
-    GetPage(
-      name: AppRoutes.dashboard,
-      page: () => AdminPanelLayout(child: const DashboardView()),
-      binding: DashboardBinding(),
-      transition: Transition.fadeIn,
-      transitionDuration: const Duration(milliseconds: 300),
-    ),
-
-    GetPage(
-      name: AppRoutes.adminDashboard,
-      page:
-          () => AdminPanelLayout(
-            child: const DashboardView(),
-            // child: const AdminDashboardView(),
+      // Main Admin Shell
+      ShellRoute(
+        builder: (context, state, child) {
+          return AdminPanelLayout(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: AppRoutes.dashboard,
+            builder: (context, state) => const DashboardView(),
+          ),
+          GoRoute(
+            path: AppRoutes.withdrawals,
+            builder: (context, state) => const WithdrawalRequestsView(),
+          ),
+          GoRoute(
+            path: AppRoutes.transactions,
+            builder: (context, state) => const TransactionsListView(),
+          ),
+          GoRoute(
+            path: AppRoutes.transactionDetails,
+            builder: (context, state) => const TransactionDetailsView(),
+          ),
+          GoRoute(
+            path: AppRoutes.driversList,
+            builder: (context, state) => const DriversListView(),
+          ),
+          GoRoute(
+            path: AppRoutes.driverDetails,
+            builder: (context, state) => const DriverDetailsView(),
+          ),
+          GoRoute(
+            path: AppRoutes.studentsList,
+            builder: (context, state) => const StudentsListView(),
+          ),
+          GoRoute(
+            path: AppRoutes.studentDetails,
+            builder: (context, state) => const StudentDetailsView(),
           ),
 
-      binding: AdminLayoutBinding(),
-      transition: Transition.fadeIn,
-    ),
-
-    GetPage(
-      name: AppRoutes.withdrawals,
-      page: () => AdminPanelLayout(child: const WithdrawalRequestsView()),
-      binding: WithdrawalRequestsBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.transactions,
-      page: () => AdminPanelLayout(child: const TransactionsListView()),
-      binding: TransactionsListBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.transactionDetails,
-      page: () => AdminPanelLayout(child: const TransactionDetailsView()),
-      binding: TransactionDetailsBinding(),
-      transition: Transition.rightToLeft,
-    ),
-
-    GetPage(
-      name: AppRoutes.driversList,
-      page: () => AdminPanelLayout(child: const DriversListView()),
-      binding: DriversListBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.driverDetails,
-      page: () => AdminPanelLayout(child: const DriverDetailsView()),
-      binding: DriverDetailsBinding(),
-      transition: Transition.rightToLeft,
-      preventDuplicates: true,
-    ),
-    GetPage(
-      name: AppRoutes.studentsList,
-      page: () => AdminPanelLayout(child: const StudentsListView()),
-      binding: StudentsListBinding(),
-      transition: Transition.rightToLeft,
-    ),
-    GetPage(
-      name: AppRoutes.studentDetails,
-      page: () => AdminPanelLayout(child: const StudentDetailsView()),
-      binding: StudentDetailsBinding(),
-      transition: Transition.rightToLeft,
-      preventDuplicates: true,
-    ),
-
-    // GetPage(
-    //   name: AppRoutes.userManagement,
-    //   page: () => AdminPanelLayout(
-    //     child: const UserManagementView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.analytics,
-    //   page: () => AdminPanelLayout(
-    //     child: const AnalyticsView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.fadeIn,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.settings,
-    //   page: () => AdminPanelLayout(
-    //     child: const SettingsView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.reports,
-    //   page: () => AdminPanelLayout(
-    //     child: const ReportsView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.content,
-    //   page: () => AdminPanelLayout(
-    //     child: const ContentDashboardView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.contentList,
-    //   page: () => AdminPanelLayout(
-    //     child: const ContentListView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.createContent,
-    //   page: () => AdminPanelLayout(
-    //     child: const CreateContentView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.rightToLeft,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.mediaLibrary,
-    //   page: () => AdminPanelLayout(
-    //     child: const MediaLibraryView(),
-    //   ),
-    //   binding: AdminLayoutBinding(),
-    //   transition: Transition.downToUp,
-    // ),
-
-    // =======================================================================
-    // ERROR ROUTES
-    // =======================================================================
-    // GetPage(
-    //   name: AppRoutes.notFound,
-    //   page: () => const NotFoundView(),
-    //   transition: Transition.fadeIn,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.unauthorized,
-    //   page: () => const UnauthorizedView(),
-    //   transition: Transition.fadeIn,
-    // ),
-
-    // GetPage(
-    //   name: AppRoutes.serverError,
-    //   page: () => const ServerErrorView(),
-    //   transition: Transition.fadeIn,
-    // ),
-  ];
+          // Placeholder Routes for missing views
+          GoRoute(
+            path: '/users',
+            builder: (context, state) => const PlaceholderView(title: 'Users'),
+          ),
+          GoRoute(
+            path: '/finance',
+            builder:
+                (context, state) => const PlaceholderView(title: 'Finance'),
+          ),
+          GoRoute(
+            path: AppRoutes.content,
+            builder:
+                (context, state) => const PlaceholderView(title: 'Content'),
+          ),
+          GoRoute(
+            path: AppRoutes.contentList,
+            builder:
+                (context, state) =>
+                    const PlaceholderView(title: 'Content List'),
+          ),
+          GoRoute(
+            path: AppRoutes.createContent,
+            builder:
+                (context, state) =>
+                    const PlaceholderView(title: 'Create Content'),
+          ),
+          GoRoute(
+            path: AppRoutes.mediaLibrary,
+            builder:
+                (context, state) =>
+                    const PlaceholderView(title: 'Media Library'),
+          ),
+          GoRoute(
+            path: AppRoutes.analytics,
+            builder:
+                (context, state) => const PlaceholderView(title: 'Analytics'),
+          ),
+          GoRoute(
+            path: AppRoutes.settings,
+            builder:
+                (context, state) => const PlaceholderView(title: 'Settings'),
+          ),
+          GoRoute(
+            path: '/admin/settings/system',
+            builder:
+                (context, state) =>
+                    const PlaceholderView(title: 'System Settings'),
+          ),
+          GoRoute(
+            path: AppRoutes.reports,
+            builder:
+                (context, state) => const PlaceholderView(title: 'Reports'),
+          ),
+          GoRoute(
+            path: AppRoutes.rbac,
+            builder:
+                (context, state) => BlocProvider(
+                  create:
+                      (context) => RbacBloc(repository: sl<RbacRepository>()),
+                  child: const RbacDashboardScreen(),
+                ),
+          ),
+        ],
+      ),
+    ],
+  );
 }

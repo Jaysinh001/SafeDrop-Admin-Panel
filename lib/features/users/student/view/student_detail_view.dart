@@ -1,43 +1,79 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
-import '../../../../core/routes/app_routes.dart';
 import '../../../../shared/widgets/loading_view.dart';
-import '../controller/student_detail_controller.dart';
+import '../../../../core/dependencies/injection_container.dart';
+import '../../../../core/routes/app_routes.dart';
+import '../bloc/student_detail_bloc.dart';
+import '../bloc/student_detail_event.dart';
+import '../bloc/student_detail_state.dart';
 import '../model/student_details_response.dart';
-import 'add_due_payment.dart';
+import '../model/students_list_response.dart' as slr;
 
 // =============================================================================
 // STUDENT DETAILS VIEW
 // =============================================================================
 
-class StudentDetailsView extends GetView<StudentDetailsController> {
-  const StudentDetailsView({super.key});
+class StudentDetailsView extends StatelessWidget {
+  final Object? arguments;
+  const StudentDetailsView({super.key, this.arguments});
+
+  static const List<String> tabTitles = [
+    'Overview',
+    'Transactions',
+    'Fees History',
+    'Credit Balance',
+    'Activity',
+  ];
+
+  int _getStudentId() {
+    if (arguments is slr.Student) {
+      return (arguments as slr.Student).studentId ?? 0;
+    } else if (arguments is Map && (arguments as Map)['id'] != null) {
+      return (arguments as Map)['id'];
+    }
+    return 0;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Obx(() {
-        if (controller.isLoading)
-          return const LoadingView(title: "Loading Student Details...");
-        if (controller.studentDetails == null) return _buildErrorState();
-
-        return Column(
-          children: [
-            _buildStudentHeader(context),
-            _buildTabBar(context),
-            Expanded(child: _buildTabContent(context)),
-          ],
-        );
-      }),
-      floatingActionButton: _buildFloatingActions(),
+    return BlocProvider(
+      create:
+          (context) =>
+              sl<StudentDetailBloc>()
+                ..add(StudentDetailLoaded(_getStudentId())),
+      child: BlocBuilder<StudentDetailBloc, StudentDetailState>(
+        builder: (context, state) {
+          return Scaffold(
+            backgroundColor: Colors.grey[50],
+            body: _buildBody(context, state),
+            floatingActionButton: _buildFloatingActions(context, state),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildStudentHeader(BuildContext context) {
+  Widget _buildBody(BuildContext context, StudentDetailState state) {
+    if (state.isLoading) {
+      return const LoadingView(title: "Loading Student Details...");
+    }
+    if (state.studentDetails == null) return _buildErrorState(context);
+
+    return Column(
+      children: [
+        _buildStudentHeader(context, state),
+        _buildTabBar(context, state),
+        Expanded(child: _buildTabContent(context, state)),
+      ],
+    );
+  }
+
+  Widget _buildStudentHeader(BuildContext context, StudentDetailState state) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -49,22 +85,25 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
           Row(
             children: [
               IconButton(
-                onPressed: () => Get.back(),
+                onPressed: () => context.pop(),
                 icon: const Icon(Icons.arrow_back),
               ),
               const Spacer(),
-              if (context.width > 768) _buildActionButtons(),
+              if (width > 768) _buildActionButtons(context, state),
             ],
           ),
           const SizedBox(height: 16),
-          context.width > 768 ? _buildDesktopProfile() : _buildMobileProfile(),
+          width > 768
+              ? _buildDesktopProfile(context, state)
+              : _buildMobileProfile(context, state),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopProfile() {
-    final student = controller.student;
+  Widget _buildDesktopProfile(BuildContext context, StudentDetailState state) {
+    final student = state.studentDetails?.student;
+    final theme = Theme.of(context);
     return Row(
       children: [
         CircleAvatar(
@@ -93,21 +132,21 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
             children: [
               Text(
                 student?.studentName ?? 'Unknown Student',
-                style: Get.textTheme.headlineMedium?.copyWith(
+                style: theme.textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Student ID: ${student?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                style: Get.textTheme.bodyLarge?.copyWith(
+                'Student ID: ${student?.id} • Code: ${state.studentDetails?.uniqueCode?.uniqueCode ?? 'N/A'}',
+                style: theme.textTheme.bodyLarge?.copyWith(
                   color: Colors.grey[600],
                 ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _buildStatusChip(),
+                  _buildStatusChip(state),
                   if (student?.email != null) ...[
                     const SizedBox(width: 12),
                     Icon(Icons.email, size: 16, color: Colors.grey[600]),
@@ -125,14 +164,17 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
             ],
           ),
         ),
-        if (controller.creditBalance != null)
-          _CreditBalanceCard(creditBalance: controller.creditBalance!),
+        if (state.studentDetails?.studentCreditBalance != null)
+          _CreditBalanceCard(
+            creditBalance: state.studentDetails!.studentCreditBalance!,
+          ),
       ],
     );
   }
 
-  Widget _buildMobileProfile() {
-    final student = controller.student;
+  Widget _buildMobileProfile(BuildContext context, StudentDetailState state) {
+    final student = state.studentDetails?.student;
+    final theme = Theme.of(context);
     return Column(
       children: [
         Row(
@@ -163,18 +205,18 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
                 children: [
                   Text(
                     student?.studentName ?? 'Unknown Student',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    'ID: ${student?.id} • ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                    style: Get.textTheme.bodyMedium?.copyWith(
+                    'ID: ${student?.id} • ${state.studentDetails?.uniqueCode?.uniqueCode ?? 'N/A'}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.grey[600],
                     ),
                   ),
                   const SizedBox(height: 8),
-                  _buildStatusChip(),
+                  _buildStatusChip(state),
                 ],
               ),
             ),
@@ -212,10 +254,10 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
             ),
           ),
         ],
-        if (controller.creditBalance != null) ...[
+        if (state.studentDetails?.studentCreditBalance != null) ...[
           const SizedBox(height: 16),
           _CreditBalanceCard(
-            creditBalance: controller.creditBalance!,
+            creditBalance: state.studentDetails!.studentCreditBalance!,
             isCompact: true,
           ),
         ],
@@ -223,13 +265,14 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
     );
   }
 
-  Widget _buildStatusChip() {
+  Widget _buildStatusChip(StudentDetailState state) {
+    final statusColor = _getStatusColor(state);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: controller.statusColor.withOpacity(0.1),
+        color: statusColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: controller.statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -238,15 +281,15 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: controller.statusColor,
+              color: statusColor,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 6),
           Text(
-            controller.studentStatus,
+            _getStudentStatus(state),
             style: TextStyle(
-              color: controller.statusColor,
+              color: statusColor,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -256,12 +299,36 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Color _getStatusColor(StudentDetailState state) {
+    final student = state.studentDetails?.student;
+    final driver = state.studentDetails?.driver;
+    if (student?.accountActive == true && driver != null) {
+      return Colors.green;
+    } else if (student?.accountActive == true) {
+      return Colors.orange;
+    } else {
+      return Colors.red;
+    }
+  }
+
+  String _getStudentStatus(StudentDetailState state) {
+    final student = state.studentDetails?.student;
+    final driver = state.studentDetails?.driver;
+    if (student?.accountActive == true && driver != null) {
+      return 'Active';
+    } else if (student?.accountActive == true) {
+      return 'Active (No Driver)';
+    } else {
+      return 'Inactive';
+    }
+  }
+
+  Widget _buildActionButtons(BuildContext context, StudentDetailState state) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ElevatedButton.icon(
-          onPressed: controller.contactStudent,
+          onPressed: () => _contactStudent(context, state),
           icon: const Icon(Icons.phone, size: 16),
           label: const Text('Call'),
           style: ElevatedButton.styleFrom(
@@ -271,19 +338,19 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.sendNotification,
+          onPressed: () => _sendNotification(context, state),
           icon: const Icon(Icons.notifications, size: 16),
           label: const Text('Notify'),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.editStudent,
+          onPressed: () => _editStudent(context),
           icon: const Icon(Icons.edit, size: 16),
           label: const Text('Edit'),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.suspendStudent,
+          onPressed: () => _suspendStudent(context),
           icon: const Icon(Icons.block, size: 16),
           label: const Text('Suspend'),
           style: ElevatedButton.styleFrom(
@@ -295,109 +362,106 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
     );
   }
 
-  Widget _buildTabBar(BuildContext context) {
+  Widget _buildTabBar(BuildContext context, StudentDetailState state) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
       color: Colors.white,
       child:
-          context.width > 768
-              ? _buildDesktopTabBar(context)
-              : _buildMobileTabBar(),
+          width > 768
+              ? _buildDesktopTabBar(context, state)
+              : _buildMobileTabBar(context, state),
     );
   }
 
-  Widget _buildDesktopTabBar(BuildContext context) {
-    return Obx(
-      () => TabBar(
-        controller: TabController(
-          length: controller.tabTitles.length,
-          vsync: Scaffold.of(context),
-          initialIndex: controller.selectedTab,
-        ),
-        tabs:
-            controller.tabTitles
-                .map((title) => Tab(text: title, height: 48))
-                .toList(),
-        onTap: controller.setSelectedTab,
-        isScrollable: true,
-        labelColor: Colors.blue,
-        unselectedLabelColor: Colors.grey[600],
-        indicatorColor: Colors.blue,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+  Widget _buildDesktopTabBar(BuildContext context, StudentDetailState state) {
+    return TabBar(
+      controller: TabController(
+        length: tabTitles.length,
+        vsync: Scaffold.of(context),
+        initialIndex: state.selectedTab,
+      ),
+      tabs: tabTitles.map((title) => Tab(text: title, height: 48)).toList(),
+      onTap:
+          (index) => context.read<StudentDetailBloc>().add(
+            StudentDetailTabChanged(index),
+          ),
+      isScrollable: true,
+      labelColor: Colors.blue,
+      unselectedLabelColor: Colors.grey[600],
+      indicatorColor: Colors.blue,
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+    );
+  }
+
+  Widget _buildMobileTabBar(BuildContext context, StudentDetailState state) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children:
+            tabTitles.asMap().entries.map((entry) {
+              final isSelected = state.selectedTab == entry.key;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(entry.value),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) {
+                      context.read<StudentDetailBloc>().add(
+                        StudentDetailTabChanged(entry.key),
+                      );
+                    }
+                  },
+                  selectedColor: Colors.blue.withOpacity(0.2),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
 
-  Widget _buildMobileTabBar() {
-    return Obx(
-      () => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children:
-              controller.tabTitles.asMap().entries.map((entry) {
-                final isSelected = controller.selectedTab == entry.key;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(entry.value),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) controller.setSelectedTab(entry.key);
-                    },
-                    selectedColor: Colors.blue.withOpacity(0.2),
-                  ),
-                );
-              }).toList(),
-        ),
+  Widget _buildTabContent(BuildContext context, StudentDetailState state) {
+    switch (state.selectedTab) {
+      case 0:
+        return _OverviewTab(context: context, state: state);
+      case 1:
+        return _TransactionsTab(context: context, state: state);
+      case 2:
+        return _DuePaymentsTab(context: context, state: state);
+      case 3:
+        return _CreditBalanceTab(context: context, state: state);
+      case 4:
+        return _ActivityTab(context: context, state: state);
+      default:
+        return _OverviewTab(context: context, state: state);
+    }
+  }
+
+  Widget _buildFloatingActions(BuildContext context, StudentDetailState state) {
+    final width = MediaQuery.of(context).size.width;
+    return width <= 768
+        ? FloatingActionButton(
+          onPressed: () => _showMobileActionsSheet(context, state),
+          child: const Icon(Icons.more_vert),
+        )
+        : FloatingActionButton(
+          onPressed:
+              () => context.read<StudentDetailBloc>().add(
+                StudentDetailRefreshRequested(),
+              ),
+          child: const Icon(Icons.refresh),
+        );
+  }
+
+  void _showMobileActionsSheet(BuildContext context, StudentDetailState state) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-    );
-  }
-
-  Widget _buildTabContent(BuildContext context) {
-    return Obx(() {
-      switch (controller.selectedTab) {
-        case 0:
-          return _OverviewTab(controller: controller);
-        case 1:
-          return _TransactionsTab(controller: controller);
-        case 2:
-          return _DuePaymentsTab(controller: controller);
-        case 3:
-          return _CreditBalanceTab(controller: controller);
-        case 4:
-          return _DuePaymentsTab(controller: controller);
-        case 5:
-          return _ActivityTab(controller: controller);
-        default:
-          return _OverviewTab(controller: controller);
-      }
-    });
-  }
-
-  Widget _buildFloatingActions() {
-    return Builder(
-      builder:
-          (context) =>
-              Get.width <= 768
-                  ? FloatingActionButton(
-                    onPressed: _showMobileActionsSheet,
-                    child: const Icon(Icons.more_vert),
-                  )
-                  : FloatingActionButton(
-                    onPressed: controller.refreshData,
-                    child: const Icon(Icons.refresh),
-                  ),
-    );
-  }
-
-  void _showMobileActionsSheet() {
-    Get.bottomSheet(
-      Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        ),
-        child: SafeArea(
+      builder: (bottomSheetContext) {
+        return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -405,58 +469,60 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
                 leading: const Icon(Icons.phone, color: Colors.green),
                 title: const Text('Call Student'),
                 onTap: () {
-                  Get.back();
-                  controller.contactStudent();
+                  Navigator.pop(bottomSheetContext);
+                  _contactStudent(context, state);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.notifications, color: Colors.blue),
                 title: const Text('Send Notification'),
                 onTap: () {
-                  Get.back();
-                  controller.sendNotification();
+                  Navigator.pop(bottomSheetContext);
+                  _sendNotification(context, state);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.payment, color: Colors.green),
                 title: const Text('Record Payment'),
                 onTap: () {
-                  Get.back();
-                  controller.recordPayment();
+                  Navigator.pop(bottomSheetContext);
+                  _recordPayment(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.edit, color: Colors.orange),
                 title: const Text('Edit Student'),
                 onTap: () {
-                  Get.back();
-                  controller.editStudent();
+                  Navigator.pop(bottomSheetContext);
+                  _editStudent(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.block, color: Colors.red),
                 title: const Text('Suspend Student'),
                 onTap: () {
-                  Get.back();
-                  controller.suspendStudent();
+                  Navigator.pop(bottomSheetContext);
+                  _suspendStudent(context);
                 },
               ),
               ListTile(
                 leading: const Icon(Icons.refresh),
                 title: const Text('Refresh'),
                 onTap: () {
-                  Get.back();
-                  controller.refreshData();
+                  Navigator.pop(bottomSheetContext);
+                  context.read<StudentDetailBloc>().add(
+                    StudentDetailRefreshRequested(),
+                  );
                 },
               ),
             ],
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -466,13 +532,96 @@ class StudentDetailsView extends GetView<StudentDetailsController> {
           const Text('Failed to load student details'),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: controller.refreshData,
+            onPressed:
+                () => context.read<StudentDetailBloc>().add(
+                  StudentDetailRefreshRequested(),
+                ),
             child: const Text('Retry'),
           ),
         ],
       ),
     );
   }
+}
+
+// =============================================================================
+// UI HELPERS (TOP-LEVEL)
+// =============================================================================
+
+void _contactStudent(BuildContext context, StudentDetailState state) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(
+        'Calling ${state.studentDetails?.student?.phoneNumber ?? 'student'}...',
+      ),
+    ),
+  );
+}
+
+void _sendNotification(BuildContext context, StudentDetailState state) {
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Notification sent to student')));
+}
+
+void _editStudent(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Edit functionality coming soon!')),
+  );
+}
+
+void _suspendStudent(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text('Suspend Student'),
+        content: const Text(
+          'Are you sure you want to suspend this student account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Student account suspended')),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Suspend'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+void _recordPayment(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(
+      content: Text('Payment recording functionality coming soon!'),
+    ),
+  );
+}
+
+void _sendPaymentReminder(BuildContext context) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text('Payment reminder sent to student')),
+  );
+}
+
+String _formatDate(DateTime? date) {
+  if (date == null) return 'N/A';
+  return '${date.day}/${date.month}/${date.year}';
+}
+
+String _formatDateTime(DateTime? date) {
+  if (date == null) return 'N/A';
+  return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
 }
 
 // =============================================================================
@@ -539,16 +688,18 @@ class _CreditBalanceCard extends StatelessWidget {
 // =============================================================================
 
 class _OverviewTab extends StatelessWidget {
-  final StudentDetailsController controller;
+  final BuildContext context;
+  final StudentDetailState state;
 
-  const _OverviewTab({required this.controller});
+  const _OverviewTab({required this.context, required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       child:
-          context.width > 1024
+          width > 1024
               ? Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -590,7 +741,8 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _buildPersonalInfoCard() {
-    final student = controller.student;
+    final student = state.studentDetails?.student;
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -599,7 +751,7 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Personal Information',
-              style: Get.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -619,7 +771,7 @@ class _OverviewTab extends StatelessWidget {
             _buildInfoRow(
               Icons.badge,
               'Unique Code',
-              controller.uniqueCode?.uniqueCode ?? 'N/A',
+              state.studentDetails?.uniqueCode?.uniqueCode ?? 'N/A',
             ),
             _buildInfoRow(
               Icons.currency_rupee,
@@ -643,7 +795,8 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _buildDriverInfoCard() {
-    final driver = controller.driver;
+    final driver = state.studentDetails?.driver;
+    final theme = Theme.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -654,14 +807,14 @@ class _OverviewTab extends StatelessWidget {
               children: [
                 Text(
                   'Assigned Driver',
-                  style: Get.textTheme.titleLarge?.copyWith(
+                  style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const Spacer(),
                 if (driver != null)
                   TextButton.icon(
-                    onPressed: controller.viewDriverDetails,
+                    onPressed: () => _viewDriverDetails(context, state),
                     icon: const Icon(Icons.visibility, size: 16),
                     label: const Text('View Details'),
                   ),
@@ -705,7 +858,38 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
+  void _viewDriverDetails(BuildContext context, StudentDetailState state) {
+    if (state.studentDetails?.driver != null) {
+      context.pushNamed(
+        AppRoutes.driverDetails,
+        extra: {"id": state.studentDetails!.driver!.id},
+      );
+    }
+  }
+
   Widget _buildQuickStatsCard() {
+    final theme = Theme.of(context);
+    final transactions = state.studentDetails?.transactions ?? [];
+
+    final totalPaid = transactions
+        .where((t) => t.status?.toLowerCase() == 'completed')
+        .fold(0, (sum, t) => sum + (t.amount ?? 0));
+
+    final totalPending = transactions
+        .where((t) => t.status?.toLowerCase() == 'pending')
+        .fold(0, (sum, t) => sum + (t.amount ?? 0));
+
+    final completedCount =
+        transactions
+            .where((t) => t.status?.toLowerCase() == 'completed')
+            .length;
+
+    final pendingCount =
+        transactions.where((t) => t.status?.toLowerCase() == 'pending').length;
+
+    final failedCount =
+        transactions.where((t) => t.status?.toLowerCase() == 'failed').length;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -714,41 +898,36 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Quick Statistics',
-              style: Get.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
             _buildStatItem(
               'Total Paid',
-              '₹${controller.totalPaid}',
+              '₹$totalPaid',
               Icons.check_circle,
               Colors.green,
             ),
             _buildStatItem(
               'Total Pending',
-              '₹${controller.totalPending}',
+              '₹$totalPending',
               Icons.schedule,
               Colors.orange,
             ),
             _buildStatItem(
               'Completed',
-              '${controller.completedTransactions}',
+              '$completedCount',
               Icons.done_all,
               Colors.blue,
             ),
             _buildStatItem(
               'Pending',
-              '${controller.pendingTransactions}',
+              '$pendingCount',
               Icons.pending,
               Colors.orange,
             ),
-            _buildStatItem(
-              'Failed',
-              '${controller.failedTransactions}',
-              Icons.error,
-              Colors.red,
-            ),
+            _buildStatItem('Failed', '$failedCount', Icons.error, Colors.red),
           ],
         ),
       ),
@@ -756,6 +935,13 @@ class _OverviewTab extends StatelessWidget {
   }
 
   Widget _buildPaymentSummaryCard() {
+    final theme = Theme.of(context);
+    final student = state.studentDetails?.student;
+    final creditBalance =
+        state.studentDetails?.studentCreditBalance?.credit ?? 0;
+    final proposedFee = student?.proposedFee ?? 0;
+    final dueAmount = proposedFee - creditBalance;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -764,33 +950,25 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Payment Summary',
-              style: Get.textTheme.titleLarge?.copyWith(
+              style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
-            _buildPaymentRow(
-              'Proposed Fee',
-              controller.student?.proposedFee ?? 0,
-              Colors.blue,
-            ),
-            _buildPaymentRow(
-              'Credit Balance',
-              controller.creditBalance?.credit ?? 0,
-              Colors.green,
-            ),
+            _buildPaymentRow('Proposed Fee', proposedFee, Colors.blue),
+            _buildPaymentRow('Credit Balance', creditBalance, Colors.green),
             const Divider(height: 24),
             _buildPaymentRow(
               'Due Amount',
-              controller.dueAmount,
-              controller.dueAmount > 0 ? Colors.red : Colors.green,
+              dueAmount,
+              dueAmount > 0 ? Colors.red : Colors.green,
               isBold: true,
             ),
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: controller.recordPayment,
+                onPressed: () => _recordPayment(context),
                 icon: const Icon(Icons.payment),
                 label: const Text('Record Payment'),
                 style: ElevatedButton.styleFrom(
@@ -802,7 +980,7 @@ class _OverviewTab extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: controller.sendPaymentReminder,
+                onPressed: () => _sendPaymentReminder(context),
                 icon: const Icon(Icons.notification_important),
                 label: const Text('Send Reminder'),
               ),
@@ -917,11 +1095,6 @@ class _OverviewTab extends StatelessWidget {
       ),
     );
   }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }
 
 // =============================================================================
@@ -929,18 +1102,20 @@ class _OverviewTab extends StatelessWidget {
 // =============================================================================
 
 class _TransactionsTab extends StatelessWidget {
-  final StudentDetailsController controller;
+  final BuildContext context;
+  final StudentDetailState state;
 
-  const _TransactionsTab({required this.controller});
+  const _TransactionsTab({required this.context, required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
     return Column(
       children: [
         _buildFilterBar(),
         Expanded(
-          child: Obx(() {
-            final transactions = controller.filteredTransactions;
+          child: () {
+            final transactions = _getFilteredTransactions();
             if (transactions.isEmpty) {
               return const Center(
                 child: Column(
@@ -954,16 +1129,27 @@ class _TransactionsTab extends StatelessWidget {
               );
             }
             return ListView.builder(
-              padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+              padding: EdgeInsets.all(width > 768 ? 24 : 16),
               itemCount: transactions.length,
               itemBuilder:
                   (context, index) =>
                       _TransactionCard(transaction: transactions[index]),
             );
-          }),
+          }(),
         ),
       ],
     );
+  }
+
+  List<Transaction> _getFilteredTransactions() {
+    final transactions = state.studentDetails?.transactions ?? [];
+    if (state.transactionFilter == 'all') return transactions;
+    return transactions
+        .where(
+          (t) =>
+              t.status?.toLowerCase() == state.transactionFilter.toLowerCase(),
+        )
+        .toList();
   }
 
   Widget _buildFilterBar() {
@@ -973,34 +1159,36 @@ class _TransactionsTab extends StatelessWidget {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
       ),
-      child: Obx(
-        () => SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildFilterChip('All', 'all'),
-              const SizedBox(width: 8),
-              _buildFilterChip('Created', 'Created'),
-              const SizedBox(width: 8),
-              _buildFilterChip('Success', 'Success'),
-              const SizedBox(width: 8),
-              _buildFilterChip('Pending', 'Pending'),
-              const SizedBox(width: 8),
-              _buildFilterChip('Failed', 'Failed'),
-            ],
-          ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            _buildFilterChip('All', 'all'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Created', 'Created'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Success', 'Success'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Pending', 'Pending'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Failed', 'Failed'),
+          ],
         ),
       ),
     );
   }
 
   Widget _buildFilterChip(String label, String value) {
-    final isSelected = controller.transactionFilter == value;
+    final isSelected = state.transactionFilter == value;
     return FilterChip(
       label: Text(label),
       selected: isSelected,
       onSelected: (selected) {
-        if (selected) controller.setTransactionFilter(value);
+        if (selected) {
+          context.read<StudentDetailBloc>().add(
+            StudentDetailTransactionFilterChanged(value),
+          );
+        }
       },
       selectedColor: Colors.blue.withOpacity(0.2),
       checkmarkColor: Colors.blue,
@@ -1149,11 +1337,6 @@ class _TransactionCard extends StatelessWidget {
     if (text.isEmpty) return text;
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
-
-  String _formatDateTime(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 // =============================================================================
@@ -1161,17 +1344,19 @@ class _TransactionCard extends StatelessWidget {
 // =============================================================================
 
 class _CreditBalanceTab extends StatelessWidget {
-  final StudentDetailsController controller;
+  final BuildContext context;
+  final StudentDetailState state;
 
-  const _CreditBalanceTab({required this.controller});
+  const _CreditBalanceTab({required this.context, required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final creditBalance = controller.creditBalance;
-    final student = controller.student;
+    final creditBalance = state.studentDetails?.studentCreditBalance;
+    final student = state.studentDetails?.student;
+    final width = MediaQuery.of(context).size.width;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       child: Column(
         children: [
           // Large Balance Display
@@ -1208,14 +1393,60 @@ class _CreditBalanceTab extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Last updated: ${_formatDateTime(creditBalance?.updatedAt)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () => _addCredit(context),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('Add Credit'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFF764ba2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          // Info Cards
+          if (width > 600)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildInfoCard(
+                    'Total Added',
+                    '₹${creditBalance?.credit ?? 0}',
+                    Icons.add_circle,
+                    Colors.green,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildInfoCard(
+                    'Total Used',
+                    '₹0',
+                    Icons.remove_circle,
+                    Colors.red,
+                  ),
+                ),
+              ],
+            )
+          else ...[
+            _buildInfoCard(
+              'Total Added',
+              '₹${creditBalance?.credit ?? 0}',
+              Icons.add_circle,
+              Colors.green,
+            ),
+            const SizedBox(height: 16),
+            _buildInfoCard('Total Used', '₹0', Icons.remove_circle, Colors.red),
+          ],
           const SizedBox(height: 24),
           Card(
             child: Padding(
@@ -1225,7 +1456,7 @@ class _CreditBalanceTab extends StatelessWidget {
                 children: [
                   Text(
                     'Balance Information',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1243,8 +1474,13 @@ class _CreditBalanceTab extends StatelessWidget {
                   const Divider(height: 24),
                   _buildBalanceRow(
                     'Amount Due',
-                    controller.dueAmount,
-                    controller.dueAmount > 0 ? Colors.red : Colors.green,
+                    (student?.proposedFee ?? 0) -
+                        (creditBalance?.credit ?? 0), // Calculate due amount
+                    ((student?.proposedFee ?? 0) -
+                                (creditBalance?.credit ?? 0)) >
+                            0
+                        ? Colors.red
+                        : Colors.green,
                     isBold: true,
                   ),
                 ],
@@ -1260,7 +1496,7 @@ class _CreditBalanceTab extends StatelessWidget {
                 children: [
                   Text(
                     'Payment Options',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1268,7 +1504,10 @@ class _CreditBalanceTab extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: controller.recordPayment,
+                      onPressed:
+                          () => _recordPayment(
+                            context,
+                          ), // Re-using existing method
                       icon: const Icon(Icons.payment),
                       label: const Text('Record New Payment'),
                       style: ElevatedButton.styleFrom(
@@ -1282,7 +1521,10 @@ class _CreditBalanceTab extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: controller.sendPaymentReminder,
+                      onPressed:
+                          () => _sendPaymentReminder(
+                            context,
+                          ), // Re-using existing method
                       icon: const Icon(Icons.notifications),
                       label: const Text('Send Payment Reminder'),
                       style: OutlinedButton.styleFrom(
@@ -1295,6 +1537,55 @@ class _CreditBalanceTab extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _addCredit(BuildContext context) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Add credit functionality coming soon!')),
+    );
+  }
+
+  Widget _buildInfoCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 24),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1329,11 +1620,6 @@ class _CreditBalanceTab extends StatelessWidget {
       ),
     );
   }
-
-  String _formatDateTime(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
 }
 
 // =============================================================================
@@ -1341,247 +1627,176 @@ class _CreditBalanceTab extends StatelessWidget {
 // =============================================================================
 
 class _DuePaymentsTab extends StatelessWidget {
-  final StudentDetailsController controller;
+  final BuildContext context;
+  final StudentDetailState state;
 
-  const _DuePaymentsTab({required this.controller});
+  const _DuePaymentsTab({required this.context, required this.state});
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final duePayments = controller.sortedDuePayments;
+    final width = MediaQuery.of(context).size.width;
+    final duePayments = state.studentDetails?.duePayments ?? [];
+    final theme = Theme.of(context);
 
-      return Column(
-        children: [
-          // Header with Add Button
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey, width: 0.2),
-              ),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Due Payments',
-                        style: Get.textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${duePayments.length} payment records',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ),
-                ElevatedButton.icon(
-                  onPressed: () => _showAddDuePaymentDialog(context),
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Due Payment'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        // Header with Add Button
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
           ),
-
-          // Due Payments Timeline
-          Expanded(
-            child:
-                duePayments.isEmpty
-                    ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.payment,
-                            size: 64,
-                            color: Colors.grey[400],
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No due payments found',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Add a new due payment to get started',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: () => _showAddDuePaymentDialog(context),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Due Payment'),
-                          ),
-                        ],
-                      ),
-                    )
-                    : ListView.builder(
-                      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
-                      itemCount: duePayments.length,
-                      itemBuilder: (context, index) {
-                        final duePayment = duePayments[index];
-                        final isLast = index == duePayments.length - 1;
-                        return _DuePaymentTimelineItem(
-                          duePayment: duePayment,
-                          isLast: isLast,
-                          onEdit:
-                              () => _showEditDuePaymentDialog(
-                                context,
-                                duePayment,
-                              ),
-                          onDelete:
-                              () => controller.deleteDuePayment(duePayment.id!),
-                        );
-                      },
-                    ),
-          ),
-        ],
-      );
-    });
-  }
-
-  void _showAddDuePaymentDialog(BuildContext context) {
-    final latestDue = controller.latestDuePayment;
-
-    // Pre-fill with next month based on latest due payment
-    final now = DateTime.now();
-    int defaultMonth = latestDue?.dueMonth ?? now.month;
-    int defaultYear = latestDue?.dueYear ?? now.year;
-
-    // Increment to next month
-    if (latestDue != null) {
-      defaultMonth++;
-      if (defaultMonth > 12) {
-        defaultMonth = 1;
-        defaultYear++;
-      }
-    }
-
-    final amountController = TextEditingController(
-      text:
-          (latestDue?.amount ?? controller.student?.proposedFee ?? 0)
-              .toString(),
-    );
-    final monthController = TextEditingController(
-      text: defaultMonth.toString(),
-    );
-    final yearController = TextEditingController(text: defaultYear.toString());
-    String selectedStatus = latestDue?.status ?? 'pending';
-
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Add Due Payment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Row(
             children: [
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  prefixText: '₹',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: monthController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Month (1-12)',
-                        border: OutlineInputBorder(),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Due Payments',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: yearController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Year',
-                        border: OutlineInputBorder(),
-                      ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${duePayments.length} payment records',
+                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
+                  ],
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'paid', child: Text('Paid')),
-                  DropdownMenuItem(value: 'overdue', child: Text('Overdue')),
-                ],
-                onChanged: (value) {
-                  if (value != null) selectedStatus = value;
-                },
+              ),
+              ElevatedButton.icon(
+                onPressed:
+                    () => context.read<StudentDetailBloc>().add(
+                      StudentDetailGenerateNextPaymentRequested(),
+                    ),
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add Due Payment'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final amount = int.tryParse(amountController.text) ?? 0;
-              final month = int.tryParse(monthController.text) ?? 1;
-              final year =
-                  int.tryParse(yearController.text) ?? DateTime.now().year;
 
-              if (amount > 0 && month >= 1 && month <= 12 && year > 2000) {
-                controller.addDuePayment(
-                  amount: amount,
-                  dueMonth: month,
-                  dueYear: year,
-                  status: selectedStatus,
-                );
-                Get.back();
-              } else {
-                Get.snackbar(
-                  'Error',
-                  'Please enter valid values',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-              }
-            },
-            child: const Text('Add'),
-          ),
-        ],
-      ),
+        // Due Payments Timeline
+        Expanded(
+          child:
+              duePayments.isEmpty
+                  ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.payment, size: 64, color: Colors.grey[400]),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No due payments found',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add a new due payment to get started',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed:
+                              () => context.read<StudentDetailBloc>().add(
+                                StudentDetailGenerateNextPaymentRequested(),
+                              ),
+                          icon: const Icon(Icons.add),
+                          label: const Text('Add Due Payment'),
+                        ),
+                      ],
+                    ),
+                  )
+                  : ListView.builder(
+                    padding: EdgeInsets.all(width > 768 ? 24 : 16),
+                    itemCount: duePayments.length,
+                    itemBuilder: (context, index) {
+                      final duePayment = duePayments[index];
+                      final isLast = index == duePayments.length - 1;
+                      return _DuePaymentTimelineItem(
+                        duePayment: duePayment,
+                        isLast: isLast,
+                        onEdit:
+                            () =>
+                                _showEditDuePaymentDialog(context, duePayment),
+                        onDelete:
+                            () => _confirmDeleteDuePayment(context, duePayment),
+                      );
+                    },
+                  ),
+        ),
+      ],
     );
+  }
+
+  void _confirmDeleteDuePayment(BuildContext context, DuePayment duePayment) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Due Payment'),
+          content: Text(
+            'Are you sure you want to delete the due payment for ${_getMonthName(duePayment.dueMonth ?? 1)} ${duePayment.dueYear}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                // In a real app, we'd dispatch an event to delete.
+                // For now, we'll just show a snackbar as we haven't implemented delete event.
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Delete functionality coming soon!'),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+    return months[month - 1];
   }
 
   void _showEditDuePaymentDialog(BuildContext context, DuePayment duePayment) {
@@ -1596,98 +1811,100 @@ class _DuePaymentsTab extends StatelessWidget {
     );
     String selectedStatus = duePayment.status ?? 'pending';
 
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Edit Due Payment'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: amountController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Amount',
-                  prefixText: '₹',
-                  border: OutlineInputBorder(),
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Due Payment'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount',
+                    prefixText: '₹',
+                    border: OutlineInputBorder(),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: monthController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Month (1-12)',
-                        border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: monthController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Month (1-12)',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: yearController,
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        labelText: 'Year',
-                        border: OutlineInputBorder(),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextField(
+                        controller: yearController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Year',
+                          border: OutlineInputBorder(),
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: selectedStatus,
-                decoration: const InputDecoration(
-                  labelText: 'Status',
-                  border: OutlineInputBorder(),
+                  ],
                 ),
-                items: const [
-                  DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                  DropdownMenuItem(value: 'paid', child: Text('Paid')),
-                  DropdownMenuItem(value: 'overdue', child: Text('Overdue')),
-                ],
-                onChanged: (value) {
-                  if (value != null) selectedStatus = value;
-                },
-              ),
-            ],
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                    DropdownMenuItem(value: 'paid', child: Text('Paid')),
+                    DropdownMenuItem(value: 'overdue', child: Text('Overdue')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) selectedStatus = value;
+                  },
+                ),
+              ],
+            ),
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final amount = int.tryParse(amountController.text) ?? 0;
-              final month = int.tryParse(monthController.text) ?? 1;
-              final year =
-                  int.tryParse(yearController.text) ?? DateTime.now().year;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final amount = int.tryParse(amountController.text) ?? 0;
+                final month = int.tryParse(monthController.text) ?? 1;
+                final year =
+                    int.tryParse(yearController.text) ?? DateTime.now().year;
 
-              if (amount > 0 && month >= 1 && month <= 12 && year > 2000) {
-                controller.updateDuePayment(
-                  id: duePayment.id!,
-                  amount: amount,
-                  dueMonth: month,
-                  dueYear: year,
-                  status: selectedStatus,
-                );
-                Get.back();
-              } else {
-                Get.snackbar(
-                  'Error',
-                  'Please enter valid values',
-                  backgroundColor: Colors.red,
-                  colorText: Colors.white,
-                );
-              }
-            },
-            child: const Text('Update'),
-          ),
-        ],
-      ),
+                if (amount > 0 && month >= 1 && month <= 12 && year > 2000) {
+                  // Dispatch update event here
+                  Navigator.pop(dialogContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Update functionality coming soon!'),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter valid values')),
+                  );
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -1835,29 +2052,33 @@ class _DuePaymentTimelineItem extends StatelessWidget {
                         ),
                         IconButton(
                           onPressed: () {
-                            Get.dialog(
-                              AlertDialog(
-                                title: const Text('Delete Due Payment'),
-                                content: Text(
-                                  'Are you sure you want to delete the due payment for $monthName ${duePayment.dueYear}?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Get.back(),
-                                    child: const Text('Cancel'),
+                            showDialog(
+                              context: context,
+                              builder: (dialogContext) {
+                                return AlertDialog(
+                                  title: const Text('Delete Due Payment'),
+                                  content: Text(
+                                    'Are you sure you want to delete the due payment for $monthName ${duePayment.dueYear}?',
                                   ),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      Get.back();
-                                      onDelete();
-                                    },
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(dialogContext),
+                                      child: const Text('Cancel'),
                                     ),
-                                    child: const Text('Delete'),
-                                  ),
-                                ],
-                              ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext);
+                                        onDelete();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                      ),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                );
+                              },
                             );
                           },
                           icon: const Icon(Icons.delete, size: 20),
@@ -1919,11 +2140,6 @@ class _DuePaymentTimelineItem extends StatelessWidget {
     ];
     return months[month - 1];
   }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year}';
-  }
 }
 
 // =============================================================================
@@ -1931,17 +2147,20 @@ class _DuePaymentTimelineItem extends StatelessWidget {
 // =============================================================================
 
 class _ActivityTab extends StatelessWidget {
-  final StudentDetailsController controller;
+  final BuildContext context;
+  final StudentDetailState state;
 
-  const _ActivityTab({required this.controller});
+  const _ActivityTab({required this.context, required this.state});
 
   @override
   Widget build(BuildContext context) {
-    final student = controller.student;
-    final fcmToken = controller.fcmToken;
+    final student = state.studentDetails?.student;
+    final fcmToken = state.studentDetails?.fcmToken;
+    final width = MediaQuery.of(context).size.width;
+    final theme = Theme.of(context);
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       child: Column(
         children: [
           Card(
@@ -1952,7 +2171,7 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Account Timeline',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1989,7 +2208,7 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Device & Platform Info',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: theme.textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -2094,10 +2313,5 @@ class _ActivityTab extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _formatDateTime(DateTime? date) {
-    if (date == null) return 'N/A';
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 }

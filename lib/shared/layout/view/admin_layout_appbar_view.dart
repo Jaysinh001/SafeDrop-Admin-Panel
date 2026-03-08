@@ -1,26 +1,16 @@
-// =============================================================================
-// ADMIN APP BAR COMPONENT
-// =============================================================================
-
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/colors.dart';
-import 'admin_panel_layout.dart';
+import '../../widgets/screen_container.dart';
+import '../bloc/admin_layout_bloc.dart';
+import '../bloc/admin_layout_event.dart';
+import '../bloc/admin_layout_state.dart';
 
 class AdminAppBar extends StatelessWidget {
-  final String title;
-  final List<String> breadcrumbs;
-  final VoidCallback onMenuPressed;
-  final bool showMenuButton;
-
-  const AdminAppBar({
-    super.key,
-    required this.title,
-    required this.breadcrumbs,
-    required this.onMenuPressed,
-    required this.showMenuButton,
-  });
+  const AdminAppBar({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +26,33 @@ class AdminAppBar extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            if (showMenuButton) ...[
-              IconButton(
-                onPressed: onMenuPressed,
-                icon: const Icon(Icons.menu),
-                tooltip: 'Toggle Sidebar',
-              ),
-              const SizedBox(width: 8),
-            ],
+            BlocBuilder<AdminLayoutBloc, AdminLayoutState>(
+              buildWhen:
+                  (previous, current) =>
+                      previous.screenSize != current.screenSize ||
+                      previous.isSidebarVisible != current.isSidebarVisible,
+              builder: (context, state) {
+                if (state.screenSize == ScreenSize.mobile) {
+                  return Row(
+                    children: [
+                      IconButton(
+                        onPressed:
+                            () => context.read<AdminLayoutBloc>().add(
+                              AdminLayoutSidebarVisibilityToggled(),
+                            ),
+                        icon:
+                            state.isSidebarVisible
+                                ? const Icon(Icons.cancel_outlined)
+                                : const Icon(Icons.menu),
+                        tooltip: 'Toggle Sidebar',
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
 
             // Breadcrumbs and Title
             Expanded(
@@ -51,66 +60,93 @@ class AdminAppBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    title,
-                    style: Get.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
+                  BlocBuilder<AdminLayoutBloc, AdminLayoutState>(
+                    buildWhen:
+                        (previous, current) =>
+                            previous.currentPageTitle !=
+                            current.currentPageTitle,
+                    builder: (context, state) {
+                      return Text(
+                        state.currentPageTitle,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      );
+                    },
                   ),
                   const SizedBox(height: 2),
-                  _buildBreadcrumbs(),
+                  BlocBuilder<AdminLayoutBloc, AdminLayoutState>(
+                    buildWhen:
+                        (previous, current) =>
+                            previous.breadcrumbs != current.breadcrumbs,
+                    builder: (context, state) {
+                      return Row(
+                        children:
+                            state.breadcrumbs.asMap().entries.map((entry) {
+                              final index = entry.key;
+                              final breadcrumb = entry.value;
+                              final isLast =
+                                  index == state.breadcrumbs.length - 1;
+
+                              return Row(
+                                children: [
+                                  Text(
+                                    breadcrumb,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall?.copyWith(
+                                      color:
+                                          isLast
+                                              ? AppColors.primary
+                                              : AppColors.textSecondary,
+                                      fontWeight:
+                                          isLast
+                                              ? FontWeight.w600
+                                              : FontWeight.w400,
+                                    ),
+                                  ),
+                                  if (!isLast) ...[
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.chevron_right,
+                                      size: 14,
+                                      color: AppColors.textTertiary,
+                                    ),
+                                    const SizedBox(width: 4),
+                                  ],
+                                ],
+                              );
+                            }).toList(),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
 
             // Action Buttons
-            _buildAppBarActions(),
+            _buildAppBarActions(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildBreadcrumbs() {
-    return Row(
-      children:
-          breadcrumbs.asMap().entries.map((entry) {
-            final index = entry.key;
-            final breadcrumb = entry.value;
-            final isLast = index == breadcrumbs.length - 1;
-
-            return Row(
-              children: [
-                Text(
-                  breadcrumb,
-                  style: Get.textTheme.bodySmall?.copyWith(
-                    color: isLast ? AppColors.primary : AppColors.textSecondary,
-                    fontWeight: isLast ? FontWeight.w600 : FontWeight.w400,
-                  ),
-                ),
-                if (!isLast) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right,
-                    size: 14,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(width: 4),
-                ],
-              ],
-            );
-          }).toList(),
-    );
-  }
-
-  Widget _buildAppBarActions() {
+  Widget _buildAppBarActions(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         // Notifications
         IconButton(
-          onPressed: () => Get.toNamed('/notifications'),
+          onPressed:
+              () => context.go(
+                AppRoutes.dashboard,
+              ), // Placeholder for notifications
           icon: const Badge(
             label: Text('3'),
             child: Icon(Icons.notifications_outlined),
@@ -120,7 +156,8 @@ class AdminAppBar extends StatelessWidget {
 
         // Search
         IconButton(
-          onPressed: () => Get.toNamed('/search'),
+          onPressed:
+              () => context.go(AppRoutes.dashboard), // Placeholder for search
           icon: const Icon(Icons.search),
           tooltip: 'Search',
         ),
@@ -130,13 +167,13 @@ class AdminAppBar extends StatelessWidget {
           onSelected: (value) {
             switch (value) {
               case 'profile':
-                Get.toNamed('/profile');
+                context.go(AppRoutes.dashboard); // Placeholder for profile
                 break;
               case 'settings':
-                Get.toNamed('/settings');
+                context.go(AppRoutes.settings);
                 break;
               case 'logout':
-                _handleLogout();
+                _handleLogout(context);
                 break;
             }
           },
@@ -178,7 +215,7 @@ class AdminAppBar extends StatelessWidget {
               backgroundColor: AppColors.primaryContainer,
               child: Text(
                 'A',
-                style: Get.textTheme.titleSmall?.copyWith(
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -190,19 +227,31 @@ class AdminAppBar extends StatelessWidget {
     );
   }
 
-  void _handleLogout() {
-    Get.defaultDialog(
-      title: 'Logout',
-      middleText: 'Are you sure you want to logout?',
-      textConfirm: 'Yes',
-      textCancel: 'No',
-      confirmTextColor: AppColors.onError,
-      buttonColor: AppColors.error,
-      onConfirm: () {
-        Get.back();
-        // Handle logout logic
-        Get.offAllNamed('/login');
-      },
+  void _handleLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Logout'),
+            content: const Text('Are you sure you want to logout?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('No'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.go(AppRoutes.login);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.error,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Yes'),
+              ),
+            ],
+          ),
     );
   }
 }

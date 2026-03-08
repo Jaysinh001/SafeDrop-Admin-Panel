@@ -1,0 +1,125 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'login_event.dart';
+import 'login_state.dart';
+
+class LoginBloc extends Bloc<LoginEvent, LoginState> {
+  LoginBloc() : super(const LoginState()) {
+    on<LoginEmailChanged>(_onEmailChanged);
+    on<LoginPasswordChanged>(_onPasswordChanged);
+    on<LoginPasswordVisibilityToggled>(_onPasswordVisibilityToggled);
+    on<LoginRememberMeToggled>(_onRememberMeToggled);
+    on<LoginSubmitted>(_onSubmitted);
+    on<LoginErrorCleared>(_onErrorCleared);
+    on<LoginDemoCredentialsFilled>(_onDemoCredentialsFilled);
+  }
+
+  void _onEmailChanged(LoginEmailChanged event, Emitter<LoginState> emit) {
+    emit(state.copyWith(email: event.email));
+  }
+
+  void _onPasswordChanged(
+    LoginPasswordChanged event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(password: event.password));
+  }
+
+  void _onPasswordVisibilityToggled(
+    LoginPasswordVisibilityToggled event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(isPasswordVisible: !state.isPasswordVisible));
+  }
+
+  void _onRememberMeToggled(
+    LoginRememberMeToggled event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(state.copyWith(rememberMe: event.value));
+  }
+
+  void _onErrorCleared(LoginErrorCleared event, Emitter<LoginState> emit) {
+    emit(state.copyWith(clearError: true));
+  }
+
+  void _onDemoCredentialsFilled(
+    LoginDemoCredentialsFilled event,
+    Emitter<LoginState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        email: 'admin@example.com',
+        password: 'password123',
+        clearError: true,
+      ),
+    );
+  }
+
+  Future<void> _onSubmitted(
+    LoginSubmitted event,
+    Emitter<LoginState> emit,
+  ) async {
+    final emailError = _validateEmail(state.email);
+    final passwordError = _validatePassword(state.password);
+
+    if (emailError != null || passwordError != null) {
+      emit(state.copyWith(errorMessage: emailError ?? passwordError));
+      return;
+    }
+
+    emit(state.copyWith(isLoading: true, clearError: true));
+
+    try {
+      // Simulate API call delay
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Mock authentication logic
+      if (state.email == 'admin@example.com' &&
+          state.password == 'password123') {
+        if (state.rememberMe) {
+          // Typically save to SharedPreferences here
+          print('Remember me enabled');
+        }
+
+        emit(state.copyWith(isLoading: false, isSuccess: true));
+      } else {
+        emit(
+          state.copyWith(
+            isLoading: false,
+            errorMessage: 'Invalid email or password',
+          ),
+        );
+      }
+    } catch (e) {
+      print('Login error: $e');
+      emit(
+        state.copyWith(
+          isLoading: false,
+          errorMessage: 'An error occurred. Please try again.',
+        ),
+      );
+    }
+  }
+
+  String? _validateEmail(String value) {
+    if (value.isEmpty) {
+      return 'Please enter your email';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String value) {
+    if (value.isEmpty) {
+      return 'Please enter your password';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+}

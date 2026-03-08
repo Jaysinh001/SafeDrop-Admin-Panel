@@ -1,9 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
-import '../../shared/widgets/error_screens.dart';
-import '../routes/app_routes.dart';
-import '../routes/route.dart';
 
 // =============================================================================
 // APP COLORS - Centralized color palette for the admin panel
@@ -158,28 +153,4 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
-}
-
-// =============================================================================
-// COMPLETE THEME SETUP FOR MAIN APP
-// =============================================================================
-
-class ThemedApp extends StatelessWidget {
-  const ThemedApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return GetMaterialApp(
-      title: 'Admin Panel',
-
-      // Routes
-      initialRoute: AppPages.initial,
-      getPages: AppPages.routes,
-
-      unknownRoute: GetPage(
-        name: AppRoutes.notFound,
-        page: () => const NotFoundScreen(),
-      ),
-    );
-  }
 }

@@ -1,47 +1,75 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get/get.dart';
+
+import '../../../../shared/widgets/loading_view.dart';
+import '../../../../core/dependencies/injection_container.dart';
+import '../bloc/driver_details_bloc.dart';
+import '../bloc/driver_details_event.dart';
+import '../bloc/driver_details_state.dart';
+import '../model/driver_details_response.dart';
+import '../model/drivers_list_response.dart' as dlr;
+
 // =============================================================================
 // DRIVER DETAILS VIEW
 // =============================================================================
 
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-
-import '../../../../shared/widgets/loading_view.dart';
-import '../controller/driver_detail_controller.dart';
-import '../model/driver_details_response.dart';
-
-class DriverDetailsView extends GetView<DriverDetailsController> {
+class DriverDetailsView extends StatelessWidget {
   const DriverDetailsView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Obx(() {
-        if (controller.isLoading) {
-          return const LoadingView(title: 'Loading driver details...');
-        }
+    int driverId = 0;
+    final args = Get.arguments;
+    if (args is dlr.Driver) {
+      driverId = args.id ?? 0;
+    } else if (args is Map && args['id'] != null) {
+      driverId = args['id'];
+    }
 
-        if (controller.driverDetails == null) {
-          return _buildErrorState();
-        }
+    return BlocProvider.value(
+      value:
+          sl<DriverDetailsBloc>()..add(DriverDetailsLoaded(driverId: driverId)),
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        body: BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const LoadingView(title: 'Loading driver details...');
+            }
 
-        return Column(
-          children: [
-            _buildDriverHeader(context),
-            _buildTabBar(context),
-            Expanded(child: _buildTabContent(context)),
-          ],
-        );
-      }),
-      floatingActionButton: _buildFloatingActions(),
+            if (state.driverDetails == null) {
+              return _buildErrorState(context);
+            }
+
+            return Column(
+              children: [
+                _buildDriverHeader(context, state),
+                _buildTabBar(context, state),
+                Expanded(child: _buildTabContent(context, state)),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: Builder(
+          builder: (context) {
+            return BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
+              builder:
+                  (context, state) => _buildFloatingActions(context, state),
+            );
+          },
+        ),
+      ),
     );
   }
 
-  Widget _buildDriverHeader(BuildContext context) {
-    final driver = controller.driver;
+  Widget _buildDriverHeader(BuildContext context, DriverDetailsState state) {
+    final driver = state.driver;
 
     return Container(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -50,7 +78,6 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
       ),
       child: Column(
         children: [
-          // Back button and actions row
           Row(
             children: [
               IconButton(
@@ -58,25 +85,26 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 icon: const Icon(Icons.arrow_back),
               ),
               const Spacer(),
-              if (context.width > 768) _buildActionButtons(),
+              if (MediaQuery.of(context).size.width > 768)
+                _buildActionButtons(context),
             ],
           ),
-
           const SizedBox(height: 16),
-
-          // Driver profile section
-          context.width > 768
-              ? _buildDesktopProfile(driver)
-              : _buildMobileProfile(driver),
+          MediaQuery.of(context).size.width > 768
+              ? _buildDesktopProfile(context, state, driver)
+              : _buildMobileProfile(context, state, driver),
         ],
       ),
     );
   }
 
-  Widget _buildDesktopProfile(Driver? driver) {
+  Widget _buildDesktopProfile(
+    BuildContext context,
+    DriverDetailsState state,
+    Driver? driver,
+  ) {
     return Row(
       children: [
-        // Profile image
         CircleAvatar(
           radius: 50,
           backgroundImage:
@@ -96,31 +124,28 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                   )
                   : null,
         ),
-
         const SizedBox(width: 24),
-
-        // Driver info
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 driver?.driverName ?? 'Unknown Driver',
-                style: Get.textTheme.headlineMedium?.copyWith(
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                'Driver ID: ${driver?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                style: Get.textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                'Driver ID: ${driver?.id} • Code: ${state.uniqueCode?.uniqueCode ?? 'N/A'}',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _buildStatusChip(),
+                  _buildStatusChip(state),
                   const SizedBox(width: 12),
                   if (driver?.email != null) ...[
                     Icon(Icons.email, size: 16, color: Colors.grey[600]),
@@ -138,18 +163,18 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
             ],
           ),
         ),
-
-        // Wallet info
-        if (controller.wallet != null)
-          _WalletSummaryCard(wallet: controller.wallet!),
+        if (state.wallet != null) _WalletSummaryCard(wallet: state.wallet!),
       ],
     );
   }
 
-  Widget _buildMobileProfile(Driver? driver) {
+  Widget _buildMobileProfile(
+    BuildContext context,
+    DriverDetailsState state,
+    Driver? driver,
+  ) {
     return Column(
       children: [
-        // Profile image and basic info
         Row(
           children: [
             CircleAvatar(
@@ -171,37 +196,32 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                       )
                       : null,
             ),
-
             const SizedBox(width: 16),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     driver?.driverName ?? 'Unknown Driver',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'ID: ${driver?.id} • Code: ${controller.uniqueCode?.uniqueCode ?? 'N/A'}',
-                    style: Get.textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                    'ID: ${driver?.id} • Code: ${state.uniqueCode?.uniqueCode ?? 'N/A'}',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
-                  _buildStatusChip(),
+                  _buildStatusChip(state),
                 ],
               ),
             ),
           ],
         ),
-
         const SizedBox(height: 16),
-
-        // Contact info
         if (driver?.email != null || driver?.phoneNumber != null)
           Container(
             padding: const EdgeInsets.all(12),
@@ -232,23 +252,21 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
               ],
             ),
           ),
-
         const SizedBox(height: 16),
-
-        // Wallet summary for mobile
-        if (controller.wallet != null)
-          _WalletSummaryCard(wallet: controller.wallet!, isCompact: true),
+        if (state.wallet != null)
+          _WalletSummaryCard(wallet: state.wallet!, isCompact: true),
       ],
     );
   }
 
-  Widget _buildStatusChip() {
+  Widget _buildStatusChip(DriverDetailsState state) {
+    final statusColor = _getStatusColor(state.driverStatus);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: controller.statusColor.withOpacity(0.1),
+        color: statusColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: controller.statusColor.withOpacity(0.3)),
+        border: Border.all(color: statusColor.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -257,15 +275,15 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
             width: 8,
             height: 8,
             decoration: BoxDecoration(
-              color: controller.statusColor,
+              color: statusColor,
               shape: BoxShape.circle,
             ),
           ),
           const SizedBox(width: 6),
           Text(
-            controller.driverStatus,
+            state.driverStatus,
             style: TextStyle(
-              color: controller.statusColor,
+              color: statusColor,
               fontWeight: FontWeight.w600,
               fontSize: 12,
             ),
@@ -275,12 +293,19 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Color _getStatusColor(String status) {
+    if (status == 'Active') return Colors.green;
+    if (status == 'Incomplete Setup') return Colors.orange;
+    return Colors.red;
+  }
+
+  Widget _buildActionButtons(BuildContext context) {
+    final bloc = context.read<DriverDetailsBloc>();
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         ElevatedButton.icon(
-          onPressed: controller.contactDriver,
+          onPressed: () => bloc.add(DriverDetailsContactRequested()),
           icon: const Icon(Icons.phone, size: 16),
           label: const Text('Call'),
           style: ElevatedButton.styleFrom(
@@ -290,19 +315,23 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.sendNotification,
+          onPressed: () => bloc.add(DriverDetailsNotificationRequested()),
           icon: const Icon(Icons.notifications, size: 16),
           label: const Text('Notify'),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.editDriver,
+          onPressed:
+              () => Get.snackbar(
+                'Edit Driver',
+                'Edit functionality coming soon!',
+              ),
           icon: const Icon(Icons.edit, size: 16),
           label: const Text('Edit'),
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed: controller.suspendDriver,
+          onPressed: () => bloc.add(DriverDetailsSuspendRequested()),
           icon: const Icon(Icons.block, size: 16),
           label: const Text('Suspend'),
           style: ElevatedButton.styleFrom(
@@ -314,114 +343,100 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
     );
   }
 
-  Widget _buildTabBar(BuildContext context) {
+  Widget _buildTabBar(BuildContext context, DriverDetailsState state) {
     return Container(
       color: Colors.white,
       child:
-          context.width > 768
-              ? _buildDesktopTabBar(context)
-              : _buildMobileTabBar(),
+          MediaQuery.of(context).size.width > 768
+              ? _buildDesktopTabBar(context, state)
+              : _buildMobileTabBar(context, state),
     );
   }
 
-  Widget _buildDesktopTabBar(BuildContext context) {
-    return Obx(
-      () => TabBar(
-        controller: TabController(
-          length: controller.tabTitles.length,
-          vsync: Scaffold.of(context),
-          initialIndex: controller.selectedTab,
-        ),
-        tabs:
-            controller.tabTitles
-                .map((title) => Tab(text: title, height: 48))
-                .toList(),
-        onTap: controller.setSelectedTab,
-        isScrollable: true,
-        labelColor: Colors.blue,
-        unselectedLabelColor: Colors.grey[600],
-        indicatorColor: Colors.blue,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+  Widget _buildDesktopTabBar(BuildContext context, DriverDetailsState state) {
+    final bloc = context.read<DriverDetailsBloc>();
+    return TabBar(
+      controller: TabController(
+        length: bloc.tabTitles.length,
+        vsync: Scaffold.of(context),
+        initialIndex: state.selectedTab,
       ),
+      tabs:
+          bloc.tabTitles.map((title) => Tab(text: title, height: 48)).toList(),
+      onTap: (index) => bloc.add(DriverDetailsTabChanged(index)),
+      isScrollable: true,
+      labelColor: Colors.blue,
+      unselectedLabelColor: Colors.grey[600],
+      indicatorColor: Colors.blue,
+      labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
     );
   }
 
-  Widget _buildMobileTabBar() {
-    return Obx(
-      () => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children:
-              controller.tabTitles.asMap().entries.map((entry) {
-                final index = entry.key;
-                final title = entry.value;
-                final isSelected = controller.selectedTab == index;
+  Widget _buildMobileTabBar(BuildContext context, DriverDetailsState state) {
+    final bloc = context.read<DriverDetailsBloc>();
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children:
+            bloc.tabTitles.asMap().entries.map((entry) {
+              final index = entry.key;
+              final title = entry.value;
+              final isSelected = state.selectedTab == index;
 
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: ChoiceChip(
-                    label: Text(title),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      if (selected) controller.setSelectedTab(index);
-                    },
-                    selectedColor: Colors.blue.withOpacity(0.2),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.blue : Colors.grey[700],
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.normal,
-                    ),
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ChoiceChip(
+                  label: Text(title),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    if (selected) bloc.add(DriverDetailsTabChanged(index));
+                  },
+                  selectedColor: Colors.blue.withOpacity(0.2),
+                  labelStyle: TextStyle(
+                    color: isSelected ? Colors.blue : Colors.grey[700],
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
-                );
-              }).toList(),
-        ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
 
-  Widget _buildTabContent(BuildContext context) {
-    return Obx(() {
-      switch (controller.selectedTab) {
-        case 0:
-          return _OverviewTab(controller: controller);
-        case 1:
-          return _WalletTab(wallet: controller.wallet);
-        case 2:
-          return _BankDetailsTab(bankDetails: controller.bankDetails);
-        case 3:
-          return _VehiclesTab(vehicles: controller.vehicles);
-        case 4:
-          return _ActivityTab(
-            driver: controller.driver,
-            fcmToken: controller.fcmToken,
-          );
-        default:
-          return _OverviewTab(controller: controller);
-      }
-    });
+  Widget _buildTabContent(BuildContext context, DriverDetailsState state) {
+    switch (state.selectedTab) {
+      case 0:
+        return _OverviewTab(state: state);
+      case 1:
+        return _WalletTab(wallet: state.wallet);
+      case 2:
+        return _BankDetailsTab(bankDetails: state.bankDetails);
+      case 3:
+        return _VehiclesTab(vehicles: state.vehicles);
+      case 4:
+        return _ActivityTab(driver: state.driver, fcmToken: state.fcmToken);
+      default:
+        return _OverviewTab(state: state);
+    }
   }
 
-  Widget _buildFloatingActions() {
-    return Builder(
-      builder: (context) {
-        if (Get.width <= 768) {
-          return FloatingActionButton(
-            onPressed: () {
-              _showMobileActionsSheet();
-            },
-            child: const Icon(Icons.more_vert),
-          );
-        }
-        return FloatingActionButton(
-          onPressed: controller.refreshData,
-          child: const Icon(Icons.refresh),
-        );
-      },
+  Widget _buildFloatingActions(BuildContext context, DriverDetailsState state) {
+    final bloc = context.read<DriverDetailsBloc>();
+    if (MediaQuery.of(context).size.width <= 768) {
+      return FloatingActionButton(
+        onPressed: () => _showMobileActionsSheet(context, bloc),
+        child: const Icon(Icons.more_vert),
+      );
+    }
+    return FloatingActionButton(
+      onPressed: () => bloc.add(DriverDetailsRefreshed()),
+      child: const Icon(Icons.refresh),
     );
   }
 
-  void _showMobileActionsSheet() {
+  void _showMobileActionsSheet(BuildContext context, DriverDetailsBloc bloc) {
     Get.bottomSheet(
       Container(
         decoration: const BoxDecoration(
@@ -437,7 +452,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 title: const Text('Call Driver'),
                 onTap: () {
                   Get.back();
-                  controller.contactDriver();
+                  bloc.add(DriverDetailsContactRequested());
                 },
               ),
               ListTile(
@@ -445,7 +460,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 title: const Text('Send Notification'),
                 onTap: () {
                   Get.back();
-                  controller.sendNotification();
+                  bloc.add(DriverDetailsNotificationRequested());
                 },
               ),
               ListTile(
@@ -453,7 +468,10 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 title: const Text('Edit Driver'),
                 onTap: () {
                   Get.back();
-                  controller.editDriver();
+                  Get.snackbar(
+                    'Edit Driver',
+                    'Edit functionality coming soon!',
+                  );
                 },
               ),
               ListTile(
@@ -461,7 +479,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 title: const Text('Suspend Driver'),
                 onTap: () {
                   Get.back();
-                  controller.suspendDriver();
+                  bloc.add(DriverDetailsSuspendRequested());
                 },
               ),
               ListTile(
@@ -469,7 +487,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
                 title: const Text('Refresh'),
                 onTap: () {
                   Get.back();
-                  controller.refreshData();
+                  bloc.add(DriverDetailsRefreshed());
                 },
               ),
             ],
@@ -479,7 +497,8 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
     );
   }
 
-  Widget _buildErrorState() {
+  Widget _buildErrorState(BuildContext context) {
+    final bloc = context.read<DriverDetailsBloc>();
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -489,7 +508,7 @@ class DriverDetailsView extends GetView<DriverDetailsController> {
           const Text('Failed to load driver details'),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: controller.refreshData,
+            onPressed: () => bloc.add(DriverDetailsRefreshed()),
             child: const Text('Retry'),
           ),
         ],
@@ -614,20 +633,24 @@ class _WalletSummaryCard extends StatelessWidget {
 // =============================================================================
 
 class _OverviewTab extends StatelessWidget {
-  final DriverDetailsController controller;
+  final DriverDetailsState state;
 
-  const _OverviewTab({required this.controller});
+  const _OverviewTab({required this.state});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       child:
-          context.width > 1024 ? _buildDesktopLayout() : _buildMobileLayout(),
+          MediaQuery.of(context).size.width > 1024
+              ? _buildDesktopLayout(context)
+              : _buildMobileLayout(context),
     );
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -635,9 +658,9 @@ class _OverviewTab extends StatelessWidget {
           flex: 2,
           child: Column(
             children: [
-              _buildPersonalInfoCard(),
+              _buildPersonalInfoCard(context),
               const SizedBox(height: 16),
-              _buildAccountStatusCard(),
+              _buildAccountStatusCard(context),
             ],
           ),
         ),
@@ -646,9 +669,9 @@ class _OverviewTab extends StatelessWidget {
           flex: 1,
           child: Column(
             children: [
-              _buildQuickStatsCard(),
+              _buildQuickStatsCard(context),
               const SizedBox(height: 16),
-              _buildRecentActivityCard(),
+              _buildRecentActivityCard(context),
             ],
           ),
         ),
@@ -656,22 +679,22 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(BuildContext context) {
     return Column(
       children: [
-        _buildPersonalInfoCard(),
+        _buildPersonalInfoCard(context),
         const SizedBox(height: 16),
-        _buildAccountStatusCard(),
+        _buildAccountStatusCard(context),
         const SizedBox(height: 16),
-        _buildQuickStatsCard(),
+        _buildQuickStatsCard(context),
         const SizedBox(height: 16),
-        _buildRecentActivityCard(),
+        _buildRecentActivityCard(context),
       ],
     );
   }
 
-  Widget _buildPersonalInfoCard() {
-    final driver = controller.driver;
+  Widget _buildPersonalInfoCard(BuildContext context) {
+    final driver = state.driver;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -680,9 +703,9 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Personal Information',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildInfoRow(
@@ -695,7 +718,7 @@ class _OverviewTab extends StatelessWidget {
             _buildInfoRow(
               Icons.badge,
               'Unique Code',
-              controller.uniqueCode?.uniqueCode ?? 'N/A',
+              state.uniqueCode?.uniqueCode ?? 'N/A',
             ),
             _buildInfoRow(
               Icons.calendar_today,
@@ -713,8 +736,8 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildAccountStatusCard() {
-    final driver = controller.driver;
+  Widget _buildAccountStatusCard(BuildContext context) {
+    final driver = state.driver;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -723,9 +746,9 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Account Status',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildStatusItem('Bank Details', driver?.hasBankDetails ?? false),
@@ -740,7 +763,7 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildQuickStatsCard() {
+  Widget _buildQuickStatsCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -749,24 +772,24 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Quick Stats',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             _buildStatItem(
               'Bank Accounts',
-              '${controller.bankDetails.length}',
+              '${state.bankDetails.length}',
               Icons.account_balance,
             ),
             _buildStatItem(
               'Vehicles',
-              '${controller.vehicles.length}',
+              '${state.vehicles.length}',
               Icons.directions_car,
             ),
             _buildStatItem(
               'Wallet Balance',
-              '₹${controller.wallet?.availableBalance ?? 0}',
+              '₹${state.wallet?.availableBalance ?? 0}',
               Icons.account_balance_wallet,
             ),
           ],
@@ -775,7 +798,7 @@ class _OverviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivityCard() {
+  Widget _buildRecentActivityCard(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -784,26 +807,26 @@ class _OverviewTab extends StatelessWidget {
           children: [
             Text(
               'Device Information',
-              style: Get.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            if (controller.fcmToken != null) ...[
+            if (state.fcmToken != null) ...[
               _buildInfoRow(
                 Icons.phone_android,
                 'Platform',
-                controller.fcmToken!.platform?.toUpperCase() ?? 'Unknown',
+                state.fcmToken!.platform?.toUpperCase() ?? 'Unknown',
               ),
               _buildInfoRow(
                 Icons.circle,
                 'Status',
-                controller.fcmToken!.isActive == true ? 'Active' : 'Inactive',
+                state.fcmToken!.isActive == true ? 'Active' : 'Inactive',
               ),
               _buildInfoRow(
                 Icons.access_time,
                 'Last Active',
-                _formatDate(controller.fcmToken!.lastUsedAt),
+                _formatDate(state.fcmToken!.lastUsedAt),
               ),
             ] else
               const Center(child: Text('No device information available')),
@@ -921,11 +944,12 @@ class _WalletTab extends StatelessWidget {
     }
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       child: Column(
         children: [
-          // Balance cards
-          context.width > 768
+          MediaQuery.of(context).size.width > 768
               ? Row(
                 children: [
                   Expanded(
@@ -976,10 +1000,7 @@ class _WalletTab extends StatelessWidget {
                   ),
                 ],
               ),
-
           const SizedBox(height: 24),
-
-          // Wallet info
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
@@ -988,7 +1009,7 @@ class _WalletTab extends StatelessWidget {
                 children: [
                   Text(
                     'Wallet Information',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1000,7 +1021,7 @@ class _WalletTab extends StatelessWidget {
                   ),
                   _buildWalletInfoRow(
                     'Last Updated',
-                    _formatDate(wallet!.updatedAt),
+                    _formatDateTime(wallet!.updatedAt),
                   ),
                 ],
               ),
@@ -1064,7 +1085,7 @@ class _WalletTab extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime? date) {
+  String _formatDateTime(DateTime? date) {
     if (date == null) return 'N/A';
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
@@ -1095,7 +1116,9 @@ class _BankDetailsTab extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       itemCount: bankDetails.length,
       itemBuilder: (context, index) {
         final bank = bankDetails[index];
@@ -1127,9 +1150,8 @@ class _BankDetailsTab extends StatelessWidget {
                         children: [
                           Text(
                             bank.bankName ?? 'Unknown Bank',
-                            style: Get.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           if (bank.isPrimary == true)
                             Container(
@@ -1202,8 +1224,6 @@ class _BankDetailsTab extends StatelessWidget {
     );
   }
 
- 
-
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
     return '${date.day}/${date.month}/${date.year}';
@@ -1235,7 +1255,9 @@ class _VehiclesTab extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       itemCount: vehicles.length,
       itemBuilder: (context, index) {
         final vehicle = vehicles[index];
@@ -1267,37 +1289,32 @@ class _VehiclesTab extends StatelessWidget {
                         children: [
                           Text(
                             vehicle.vehicleNumber ?? 'Unknown',
-                            style: Get.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              if (vehicle.isAssigned == true)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.green.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.green.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'ASSIGNED',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
+                          if (vehicle.isAssigned == true)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.green.withOpacity(0.3),
                                 ),
-                            ],
-                          ),
+                              ),
+                              child: const Text(
+                                'ASSIGNED',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                         ],
                       ),
                     ),
@@ -1366,7 +1383,9 @@ class _ActivityTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(
+        MediaQuery.of(context).size.width > 768 ? 24 : 16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1378,7 +1397,7 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Account Timeline',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -1415,7 +1434,7 @@ class _ActivityTab extends StatelessWidget {
                 children: [
                   Text(
                     'Device & Platform Info',
-                    style: Get.textTheme.titleLarge?.copyWith(
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),

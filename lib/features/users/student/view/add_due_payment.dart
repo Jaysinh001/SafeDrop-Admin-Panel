@@ -304,7 +304,7 @@ class AddDuePaymentView extends GetView<AddDuePaymentController> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          value: controller.selectedMonth,
+          initialValue: controller.selectedMonth,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[50],
@@ -356,7 +356,7 @@ class AddDuePaymentView extends GetView<AddDuePaymentController> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<int>(
-          value: controller.selectedYear,
+          initialValue: controller.selectedYear,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[50],
@@ -407,7 +407,7 @@ class AddDuePaymentView extends GetView<AddDuePaymentController> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<Object>(
-          value: controller.selectedStatus,
+          initialValue: controller.selectedStatus,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.grey[50],

@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/routes/app_routes.dart';
 import '../../../../core/services/network_services_api.dart';
+import '../../../../core/utility/utils.dart';
 import '../model/student_details_response.dart';
 import '../model/students_list_response.dart' as slr;
 
@@ -178,13 +179,22 @@ class StudentDetailsController extends GetxController {
   }
 
   // Add new due payment
-  void addDuePayment({
-    required int amount,
-    required int dueMonth,
-    required int dueYear,
-    required String status,
-  }) {
-    // Implement API call to add due payment
+  Future<void> generateNextPaymentDue() async {
+    _isLoading.value = true;
+
+    try {
+
+      Utils.showLog("generateNextPaymentDue called");
+
+      final payload = {'student_id': student?.id, 'driver_id': driver?.id};
+
+      final res = await NetworkServicesApi().postApi(
+        path: 'generateNextStudentDues',
+        data: payload,
+      );
+    } finally {
+      _isLoading.value = false;
+    }
   }
 
   // Update existing due payment

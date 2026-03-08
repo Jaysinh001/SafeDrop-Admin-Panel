@@ -1,52 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/routes/app_routes.dart';
 import '../../../../shared/widgets/loading_view.dart';
-import '../controller/transactions_list_controller.dart';
+import '../../../../core/dependencies/injection_container.dart';
+import '../bloc/transactions_list_bloc.dart';
+import '../bloc/transactions_list_event.dart';
+import '../bloc/transactions_list_state.dart';
 import '../model/transactions_list_model.dart';
 
-class TransactionsListView extends GetView<TransactionsListController> {
+class TransactionsListView extends StatelessWidget {
   const TransactionsListView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: Column(
-        children: [
-          _buildHeader(context),
-          _buildFilterAndSearch(context),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading) {
-                return const LoadingView(title: "Loading Transactions...");
-              }
-              
-              if (controller.filteredTransactions.isEmpty) {
-                return _buildEmptyState();
-              }
-              
-              return _buildTransactionsList(context);
-            }),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: controller.refreshData,
-        tooltip: 'Refresh',
-        child: const Icon(Icons.refresh),
+    return BlocProvider.value(
+      value: sl<TransactionsListBloc>(),
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        body: BlocBuilder<TransactionsListBloc, TransactionsListState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                _buildHeader(context, state),
+                _buildFilterAndSearch(context, state),
+                Expanded(
+                  child: () {
+                    if (state.isLoading) {
+                      return const LoadingView(
+                        title: "Loading Transactions...",
+                      );
+                    }
+                    if (state.filteredTransactions.isEmpty) {
+                      return _buildEmptyState(context);
+                    }
+                    return _buildTransactionsList(context, state);
+                  }(),
+                ),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: Builder(
+          builder:
+              (context) => FloatingActionButton(
+                onPressed:
+                    () => context.read<TransactionsListBloc>().add(
+                      TransactionsListRefreshed(),
+                    ),
+                tooltip: 'Refresh',
+                child: const Icon(Icons.refresh),
+              ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, TransactionsListState state) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey, width: 0.2),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
       ),
       child: Row(
         children: [
@@ -62,37 +79,34 @@ class TransactionsListView extends GetView<TransactionsListController> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Obx(() => Text(
-                  '${controller.filteredTransactions.length} transactions found',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey[600],
-                  ),
-                )),
+                Text(
+                  '${state.filteredTransactions.length} transactions found',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                ),
               ],
             ),
           ),
-          if (context.width > 768)
-            _buildQuickStats(),
+          if (width > 768) _buildQuickStats(state),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStats() {
-    return Obx(() {
-      final stats = controller.transactionStats;
-      return Row(
-        children: [
-          _buildStatChip('Total', stats['total'], Colors.blue),
-          const SizedBox(width: 8),
-          _buildStatChip('Success', stats['Success'], Colors.green),
-          const SizedBox(width: 8),
-          _buildStatChip('Pending', stats['Pending'], Colors.orange),
-          const SizedBox(width: 8),
-          _buildStatChip('Failed', stats['Failed'], Colors.red),
-        ],
-      );
-    });
+  Widget _buildQuickStats(TransactionsListState state) {
+    final stats = state.transactionStats;
+    return Row(
+      children: [
+        _buildStatChip('Total', stats['total'], Colors.blue),
+        const SizedBox(width: 8),
+        _buildStatChip('Success', stats['Success'], Colors.green),
+        const SizedBox(width: 8),
+        _buildStatChip('Pending', stats['Pending'], Colors.orange),
+        const SizedBox(width: 8),
+        _buildStatChip('Failed', stats['Failed'], Colors.red),
+      ],
+    );
   }
 
   Widget _buildStatChip(String label, int count, Color color) {
@@ -109,10 +123,7 @@ class TransactionsListView extends GetView<TransactionsListController> {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -128,30 +139,41 @@ class TransactionsListView extends GetView<TransactionsListController> {
     );
   }
 
-  Widget _buildFilterAndSearch(BuildContext context) {
+  Widget _buildFilterAndSearch(
+    BuildContext context,
+    TransactionsListState state,
+  ) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: context.width > 768 ? 24 : 16,
+        horizontal: width > 768 ? 24 : 16,
         vertical: 16,
       ),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Colors.grey, width: 0.2),
-        ),
+        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
       ),
-      child: context.width > 768 ? _buildDesktopFilterBar() : _buildMobileFilterBar(),
+      child:
+          width > 768
+              ? _buildDesktopFilterBar(context, state)
+              : _buildMobileFilterBar(context, state),
     );
   }
 
-  Widget _buildDesktopFilterBar() {
+  Widget _buildDesktopFilterBar(
+    BuildContext context,
+    TransactionsListState state,
+  ) {
     return Row(
       children: [
         // Search bar
         Expanded(
           flex: 2,
           child: TextField(
-            onChanged: controller.setSearchQuery,
+            onChanged:
+                (val) => context.read<TransactionsListBloc>().add(
+                  TransactionsListSearchQueryChanged(val),
+                ),
             decoration: InputDecoration(
               hintText: 'Search by ID, student name, or status...',
               prefixIcon: const Icon(Icons.search),
@@ -161,14 +183,17 @@ class TransactionsListView extends GetView<TransactionsListController> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
           ),
         ),
         const SizedBox(width: 16),
-        
+
         // Filter dropdown
-        Obx(() => Container(
+        Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -177,7 +202,7 @@ class TransactionsListView extends GetView<TransactionsListController> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: controller.selectedFilter,
+              value: state.selectedFilter,
               hint: const Text('Filter'),
               items: const [
                 DropdownMenuItem(value: 'all', child: Text('All Transactions')),
@@ -189,16 +214,20 @@ class TransactionsListView extends GetView<TransactionsListController> {
                 DropdownMenuItem(value: 'cash', child: Text('Cash')),
               ],
               onChanged: (value) {
-                if (value != null) controller.setFilter(value);
+                if (value != null) {
+                  context.read<TransactionsListBloc>().add(
+                    TransactionsListFilterChanged(value),
+                  );
+                }
               },
             ),
           ),
-        )),
-        
+        ),
+
         const SizedBox(width: 16),
-        
+
         // Sort dropdown
-        Obx(() => Container(
+        Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
@@ -207,7 +236,7 @@ class TransactionsListView extends GetView<TransactionsListController> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: controller.sortBy,
+              value: state.sortBy,
               hint: const Text('Sort'),
               items: const [
                 DropdownMenuItem(value: 'date', child: Text('Date')),
@@ -216,34 +245,43 @@ class TransactionsListView extends GetView<TransactionsListController> {
                 DropdownMenuItem(value: 'status', child: Text('Status')),
               ],
               onChanged: (value) {
-                if (value != null) controller.setSortBy(value);
+                if (value != null) {
+                  context.read<TransactionsListBloc>().add(
+                    TransactionsListSortChanged(value),
+                  );
+                }
               },
             ),
           ),
-        )),
-        
+        ),
+
         const SizedBox(width: 8),
-        
+
         // Sort direction
-        Obx(() => IconButton(
-          onPressed: () => controller.setSortBy(controller.sortBy),
+        IconButton(
+          onPressed:
+              () => context.read<TransactionsListBloc>().add(
+                TransactionsListSortChanged(state.sortBy),
+              ),
           icon: Icon(
-            controller.sortAscending 
-                ? Icons.arrow_upward 
-                : Icons.arrow_downward,
+            state.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
           ),
-          tooltip: controller.sortAscending ? 'Ascending' : 'Descending',
-        )),
+          tooltip: state.sortAscending ? 'Ascending' : 'Descending',
+        ),
       ],
     );
   }
 
-  Widget _buildMobileFilterBar() {
+  Widget _buildMobileFilterBar(
+    BuildContext context,
+    TransactionsListState state,
+  ) {
+    final bloc = context.read<TransactionsListBloc>();
     return Column(
       children: [
         // Search bar
         TextField(
-          onChanged: controller.setSearchQuery,
+          onChanged: (val) => bloc.add(TransactionsListSearchQueryChanged(val)),
           decoration: InputDecoration(
             hintText: 'Search transactions...',
             prefixIcon: const Icon(Icons.search),
@@ -253,58 +291,73 @@ class TransactionsListView extends GetView<TransactionsListController> {
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
           ),
         ),
         const SizedBox(height: 12),
-        
+
         // Filter and Sort chips
         Row(
           children: [
             Expanded(
-              child: Obx(() => SingleChildScrollView(
+              child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: controller.filterOptions.map((filter) {
-                    final isSelected = controller.selectedFilter == filter;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(_getFilterDisplayName(filter)),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) controller.setFilter(filter);
-                        },
-                        selectedColor: Colors.blue.withOpacity(0.2),
-                        checkmarkColor: Colors.blue,
-                      ),
-                    );
-                  }).toList(),
+                  children:
+                      bloc.filterOptions.map((filter) {
+                        final isSelected = state.selectedFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: FilterChip(
+                            label: Text(_getFilterDisplayName(filter)),
+                            selected: isSelected,
+                            onSelected: (selected) {
+                              if (selected)
+                                bloc.add(TransactionsListFilterChanged(filter));
+                            },
+                            selectedColor: Colors.blue.withOpacity(0.2),
+                            checkmarkColor: Colors.blue,
+                          ),
+                        );
+                      }).toList(),
                 ),
-              )),
+              ),
             ),
-            
+
             // Sort button
             PopupMenuButton<String>(
-              onSelected: controller.setSortBy,
+              onSelected: (val) => bloc.add(TransactionsListSortChanged(val)),
               icon: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(Icons.sort),
-                  Obx(() => Icon(
-                    controller.sortAscending 
-                        ? Icons.arrow_upward 
+                  Icon(
+                    state.sortAscending
+                        ? Icons.arrow_upward
                         : Icons.arrow_downward,
                     size: 16,
-                  )),
+                  ),
                 ],
               ),
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'date', child: Text('Sort by Date')),
-                PopupMenuItem(value: 'amount', child: Text('Sort by Amount')),
-                PopupMenuItem(value: 'student', child: Text('Sort by Student')),
-                PopupMenuItem(value: 'status', child: Text('Sort by Status')),
-              ],
+              itemBuilder:
+                  (context) => const [
+                    PopupMenuItem(value: 'date', child: Text('Sort by Date')),
+                    PopupMenuItem(
+                      value: 'amount',
+                      child: Text('Sort by Amount'),
+                    ),
+                    PopupMenuItem(
+                      value: 'student',
+                      child: Text('Sort by Student'),
+                    ),
+                    PopupMenuItem(
+                      value: 'status',
+                      child: Text('Sort by Status'),
+                    ),
+                  ],
             ),
           ],
         ),
@@ -314,36 +367,49 @@ class TransactionsListView extends GetView<TransactionsListController> {
 
   String _getFilterDisplayName(String filter) {
     switch (filter) {
-      case 'all': return 'All';
-      case 'Success': return 'Success';
-      case 'Pending': return 'Pending';
-      case 'Created': return 'Created';
-      case 'Failed': return 'Failed';
-      case 'online': return 'Online';
-      case 'cash': return 'Cash';
-      default: return filter.capitalizeFirst!;
+      case 'all':
+        return 'All';
+      case 'Success':
+        return 'Success';
+      case 'Pending':
+        return 'Pending';
+      case 'Created':
+        return 'Created';
+      case 'Failed':
+        return 'Failed';
+      case 'online':
+        return 'Online';
+      case 'cash':
+        return 'Cash';
+      default:
+        return filter.capitalizeFirst ?? filter;
     }
   }
 
-  Widget _buildTransactionsList(BuildContext context) {
+  Widget _buildTransactionsList(
+    BuildContext context,
+    TransactionsListState state,
+  ) {
     return RefreshIndicator(
-      onRefresh: controller.refreshData,
+      onRefresh: () async {
+        context.read<TransactionsListBloc>().add(TransactionsListRefreshed());
+      },
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 1200) {
-            return _buildDesktopTable();
+            return _buildDesktopTable(context, state);
           } else if (constraints.maxWidth > 768) {
-            return _buildTabletGrid();
+            return _buildTabletGrid(context, state);
           } else {
-            return _buildMobileList();
+            return _buildMobileList(context, state);
           }
         },
       ),
     );
   }
 
-  Widget _buildDesktopTable() {
-    return Obx(() => SingleChildScrollView(
+  Widget _buildDesktopTable(BuildContext context, TransactionsListState state) {
+    return SingleChildScrollView(
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.all(24),
@@ -362,73 +428,129 @@ class TransactionsListView extends GetView<TransactionsListController> {
           columnSpacing: 24,
           horizontalMargin: 24,
           headingRowHeight: 56,
-          dataRowHeight: 72,
+          dataRowMinHeight: 72,
+          dataRowMaxHeight: 72,
           columns: const [
-            DataColumn(label: Text('Transaction', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Student', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Amount', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Mode', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-            DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+            DataColumn(
+              label: Text(
+                'Transaction',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Student',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Amount',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Status',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Mode',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Date',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Actions',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
           ],
-          rows: controller.filteredTransactions.map((transaction) {
-            return DataRow(
-              cells: [
-                DataCell(Text('#${transaction.id}', style: const TextStyle(fontWeight: FontWeight.w600))),
-                DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+          rows:
+              state.filteredTransactions.map((transaction) {
+                return DataRow(
+                  cells: [
+                    DataCell(
                       Text(
-                        transaction.studentName ?? 'Unknown',
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                        overflow: TextOverflow.ellipsis,
+                        '#${transaction.id}',
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
+                    ),
+                    DataCell(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            transaction.studentName ?? 'Unknown',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            'ID: ${transaction.studentId}',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    DataCell(
                       Text(
-                        'ID: ${transaction.studentId}',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        '₹${transaction.amount ?? 0}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
-                    ],
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    '₹${transaction.amount ?? 0}',
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                  ),
-                ),
-                DataCell(_buildStatusChip(transaction.status ?? '')),
-                DataCell(_buildModeChip(transaction.transactionMode ?? '')),
-                DataCell(Text(_formatDate(transaction.updatedAt))),
-                DataCell(
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        onPressed: () => controller.viewTransactionDetails(transaction),
-                        icon: const Icon(Icons.visibility, size: 20),
-                        tooltip: 'View Details',
+                    ),
+                    DataCell(_buildStatusChip(transaction.status ?? '')),
+                    DataCell(_buildModeChip(transaction.transactionMode ?? '')),
+                    DataCell(Text(_formatDate(transaction.updatedAt))),
+                    DataCell(
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed:
+                                () => _viewTransactionDetails(
+                                  context,
+                                  transaction,
+                                ),
+                            icon: const Icon(Icons.visibility, size: 20),
+                            tooltip: 'View Details',
+                          ),
+                          IconButton(
+                            onPressed:
+                                () => _viewStudentDetails(context, transaction),
+                            icon: const Icon(Icons.person, size: 20),
+                            tooltip: 'View Student',
+                          ),
+                        ],
                       ),
-                      IconButton(
-                        onPressed: () => controller.viewStudentDetails(transaction),
-                        icon: const Icon(Icons.person, size: 20),
-                        tooltip: 'View Student',
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
+                    ),
+                  ],
+                );
+              }).toList(),
         ),
       ),
-    ));
+    );
   }
 
-  Widget _buildTabletGrid() {
-    return Obx(() => GridView.builder(
+  Widget _buildTabletGrid(BuildContext context, TransactionsListState state) {
+    return GridView.builder(
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
@@ -436,41 +558,53 @@ class TransactionsListView extends GetView<TransactionsListController> {
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
-      itemCount: controller.filteredTransactions.length,
+      itemCount: state.filteredTransactions.length,
       itemBuilder: (context, index) {
-        final transaction = controller.filteredTransactions[index];
+        final transaction = state.filteredTransactions[index];
         return _TransactionCard(
           transaction: transaction,
-          onTapTransaction: () => controller.viewTransactionDetails(transaction),
-          onTapStudent: () => controller.viewStudentDetails(transaction),
+          onTapTransaction: () => _viewTransactionDetails(context, transaction),
+          onTapStudent: () => _viewStudentDetails(context, transaction),
         );
       },
-    ));
+    );
   }
 
-  Widget _buildMobileList() {
-    return Obx(() => ListView.builder(
+  Widget _buildMobileList(BuildContext context, TransactionsListState state) {
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: controller.filteredTransactions.length,
+      itemCount: state.filteredTransactions.length,
       itemBuilder: (context, index) {
-        final transaction = controller.filteredTransactions[index];
+        final transaction = state.filteredTransactions[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: _TransactionCard(
             transaction: transaction,
-            onTapTransaction: () => controller.viewTransactionDetails(transaction),
-            onTapStudent: () => controller.viewStudentDetails(transaction),
+            onTapTransaction:
+                () => _viewTransactionDetails(context, transaction),
+            onTapStudent: () => _viewStudentDetails(context, transaction),
             isMobile: true,
           ),
         );
       },
-    ));
+    );
+  }
+
+  void _viewTransactionDetails(BuildContext context, Transaction transaction) {
+    Get.toNamed(AppRoutes.transactionDetails, arguments: transaction);
+  }
+
+  void _viewStudentDetails(BuildContext context, Transaction transaction) {
+    Get.toNamed(
+      AppRoutes.studentDetails,
+      arguments: {'id': transaction.studentId},
+    );
   }
 
   Widget _buildStatusChip(String status) {
     Color color;
     IconData icon;
-    
+
     switch (status.toLowerCase()) {
       case 'success':
         color = Colors.green;
@@ -506,7 +640,7 @@ class TransactionsListView extends GetView<TransactionsListController> {
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            status.capitalizeFirst!,
+            status.capitalizeFirst ?? status,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -520,7 +654,8 @@ class TransactionsListView extends GetView<TransactionsListController> {
 
   Widget _buildModeChip(String mode) {
     Color color = mode.toLowerCase() == 'online' ? Colors.blue : Colors.green;
-    IconData icon = mode.toLowerCase() == 'online' ? Icons.language : Icons.money;
+    IconData icon =
+        mode.toLowerCase() == 'online' ? Icons.language : Icons.money;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -535,7 +670,7 @@ class TransactionsListView extends GetView<TransactionsListController> {
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            mode.capitalizeFirst!,
+            mode.capitalizeFirst ?? mode,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -547,36 +682,36 @@ class TransactionsListView extends GetView<TransactionsListController> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.receipt_long_outlined, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'No transactions found',
-            style: Get.textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filter criteria',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              controller.setSearchQuery('');
-              controller.setFilter('all');
+              context.read<TransactionsListBloc>().add(
+                const TransactionsListSearchQueryChanged(''),
+              );
+              context.read<TransactionsListBloc>().add(
+                const TransactionsListFilterChanged('all'),
+              );
             },
             icon: const Icon(Icons.clear_all),
             label: const Text('Clear Filters'),
@@ -588,10 +723,10 @@ class TransactionsListView extends GetView<TransactionsListController> {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
-    
+
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         return '${difference.inMinutes}m ago';
@@ -626,9 +761,7 @@ class _TransactionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTapTransaction,
         borderRadius: BorderRadius.circular(12),
@@ -677,11 +810,11 @@ class _TransactionCard extends StatelessWidget {
                   _buildStatusChip(transaction.status ?? ''),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
               const Divider(),
               const SizedBox(height: 12),
-              
+
               // Amount
               Container(
                 padding: const EdgeInsets.all(12),
@@ -692,7 +825,11 @@ class _TransactionCard extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.currency_rupee, color: Colors.green, size: 20),
+                    const Icon(
+                      Icons.currency_rupee,
+                      color: Colors.green,
+                      size: 20,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       '${transaction.amount ?? 0}',
@@ -707,9 +844,9 @@ class _TransactionCard extends StatelessWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Student Info
               Container(
                 padding: const EdgeInsets.all(12),
@@ -723,7 +860,9 @@ class _TransactionCard extends StatelessWidget {
                       radius: 20,
                       backgroundColor: Colors.blue.withOpacity(0.2),
                       child: Text(
-                        (transaction.studentName ?? 'U').substring(0, 1).toUpperCase(),
+                        (transaction.studentName ?? 'U')
+                            .substring(0, 1)
+                            .toUpperCase(),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
@@ -815,7 +954,7 @@ class _TransactionCard extends StatelessWidget {
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            status.capitalizeFirst!,
+            status.capitalizeFirst ?? status,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -829,7 +968,8 @@ class _TransactionCard extends StatelessWidget {
 
   Widget _buildModeChip(String mode) {
     Color color = mode.toLowerCase() == 'online' ? Colors.blue : Colors.green;
-    IconData icon = mode.toLowerCase() == 'online' ? Icons.language : Icons.money;
+    IconData icon =
+        mode.toLowerCase() == 'online' ? Icons.language : Icons.money;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -844,7 +984,7 @@ class _TransactionCard extends StatelessWidget {
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            mode.capitalizeFirst!,
+            mode.capitalizeFirst ?? mode,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -858,10 +998,10 @@ class _TransactionCard extends StatelessWidget {
 
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
-    
+
     final now = DateTime.now();
     final difference = now.difference(date);
-    
+
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         return '${difference.inMinutes}m ago';

@@ -3,7 +3,6 @@
 // =============================================================================
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 
 import '../../../core/theme/colors.dart';
 import '../../widgets/screen_container.dart';
@@ -46,7 +45,7 @@ class AdminSideBar extends StatelessWidget {
       child: Column(
         children: [
           // Logo Header
-          _buildLogoHeader(),
+          _buildLogoHeader(context),
 
           // Navigation Items
           Expanded(
@@ -61,13 +60,13 @@ class AdminSideBar extends StatelessWidget {
           ),
 
           // Footer with toggle button
-          _buildSidebarFooter(),
+          _buildSidebarFooter(context),
         ],
       ),
     );
   }
 
-  Widget _buildLogoHeader() {
+  Widget _buildLogoHeader(BuildContext context) {
     return Container(
       height: 80,
       padding: const EdgeInsets.all(16),
@@ -95,14 +94,14 @@ class AdminSideBar extends StatelessWidget {
                 children: [
                   Text(
                     'Admin Panel',
-                    style: Get.textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.sidebarSelectedText,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     'v1.0.0',
-                    style: Get.textTheme.bodySmall?.copyWith(
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.sidebarText,
                     ),
                   ),
@@ -162,7 +161,7 @@ class AdminSideBar extends StatelessWidget {
                   Expanded(
                     child: Text(
                       item.title,
-                      style: Get.textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color:
                             isSelected
                                 ? AppColors.sidebarSelectedText
@@ -184,7 +183,7 @@ class AdminSideBar extends StatelessWidget {
                       ),
                       child: Text(
                         item.badge!,
-                        style: Get.textTheme.bodySmall?.copyWith(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.onError,
                           fontWeight: FontWeight.w600,
                         ),
@@ -216,7 +215,7 @@ class AdminSideBar extends StatelessWidget {
           isExpanded
               ? Text(
                 item.title,
-                style: Get.textTheme.bodyMedium?.copyWith(
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color:
                       isSelected
                           ? AppColors.sidebarSelectedText
@@ -224,7 +223,7 @@ class AdminSideBar extends StatelessWidget {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               )
-              : SizedBox(),
+              : const SizedBox(),
       iconColor: AppColors.sidebarText,
       collapsedIconColor: AppColors.sidebarText,
       backgroundColor: Colors.transparent,
@@ -241,7 +240,7 @@ class AdminSideBar extends StatelessWidget {
     );
   }
 
-  Widget _buildSidebarFooter() {
+  Widget _buildSidebarFooter(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       child: Row(
@@ -267,9 +266,9 @@ class AdminSideBar extends StatelessWidget {
               ),
               child: Text(
                 'Admin User',
-                style: Get.textTheme.bodySmall?.copyWith(
-                  color: AppColors.sidebarText,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.sidebarText),
               ),
             ),
           ],

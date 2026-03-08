@@ -1,54 +1,69 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/widgets/loading_view.dart';
-import '../controller/withdrawal_request_controller.dart';
+import '../../../../core/dependencies/injection_container.dart';
+import '../bloc/withdrawal_requests_bloc.dart';
+import '../bloc/withdrawal_requests_event.dart';
+import '../bloc/withdrawal_requests_state.dart';
 import '../model/withdrawal_request_response.dart';
 
-// =============================================================================
-// WITHDRAWAL REQUESTS VIEW
-// =============================================================================
-
-class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
+class WithdrawalRequestsView extends StatelessWidget {
   const WithdrawalRequestsView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          _buildHeader(context),
-          _buildFilterAndSearch(context),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoading) {
-                return const LoadingView(
-                  title: "Loading withdrawal requests...",
-                );
-              }
+    return BlocProvider.value(
+      value: sl<WithdrawalRequestsBloc>(),
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: BlocBuilder<WithdrawalRequestsBloc, WithdrawalRequestsState>(
+          builder: (context, state) {
+            return Column(
+              children: [
+                _buildHeader(context, state),
+                _buildFilterAndSearch(context, state),
+                Expanded(
+                  child: () {
+                    if (state.isLoading) {
+                      return const LoadingView(
+                        title: "Loading withdrawal requests...",
+                      );
+                    }
 
-              if (controller.filteredRequests.isEmpty) {
-                return _buildEmptyState();
-              }
+                    if (state.filteredRequests.isEmpty) {
+                      return _buildEmptyState(context);
+                    }
 
-              return _buildRequestsList(context);
-            }),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: controller.refreshData,
-        tooltip: 'Refresh',
-        child: const Icon(Icons.refresh),
+                    return _buildRequestsList(context, state);
+                  }(),
+                ),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: Builder(
+          builder:
+              (context) => FloatingActionButton(
+                onPressed:
+                    () => context.read<WithdrawalRequestsBloc>().add(
+                      WithdrawalRequestsRefreshed(),
+                    ),
+                tooltip: 'Refresh',
+                child: const Icon(Icons.refresh),
+              ),
+        ),
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, WithdrawalRequestsState state) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
-      padding: EdgeInsets.all(context.width > 768 ? 24 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       child: Row(
         children: [
           Expanded(
@@ -63,48 +78,38 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Obx(
-                  () => Text(
-                    '${controller.filteredRequests.length} requests found',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+                Text(
+                  '${state.filteredRequests.length} requests found',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
             ),
           ),
-          if (context.width > 768) _buildQuickStats(),
+          if (width > 768) _buildQuickStats(state),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStats() {
-    return Obx(() {
-      final pending =
-          controller.withdrawalRequests
-              .where((r) => r.status == 'pending')
-              .length;
-      final approved =
-          controller.withdrawalRequests
-              .where((r) => r.status == 'approved')
-              .length;
-      final rejected =
-          controller.withdrawalRequests
-              .where((r) => r.status == 'rejected')
-              .length;
+  Widget _buildQuickStats(WithdrawalRequestsState state) {
+    final pending =
+        state.withdrawalRequests.where((r) => r.status == 'pending').length;
+    final approved =
+        state.withdrawalRequests.where((r) => r.status == 'approved').length;
+    final rejected =
+        state.withdrawalRequests.where((r) => r.status == 'rejected').length;
 
-      return Row(
-        children: [
-          _buildStatChip('Pending', pending, AppColors.warning),
-          const SizedBox(width: 8),
-          _buildStatChip('Approved', approved, AppColors.success),
-          const SizedBox(width: 8),
-          _buildStatChip('Rejected', rejected, AppColors.error),
-        ],
-      );
-    });
+    return Row(
+      children: [
+        _buildStatChip('Pending', pending, AppColors.warning),
+        const SizedBox(width: 8),
+        _buildStatChip('Approved', approved, AppColors.success),
+        const SizedBox(width: 8),
+        _buildStatChip('Rejected', rejected, AppColors.error),
+      ],
+    );
   }
 
   Widget _buildStatChip(String label, int count, Color color) {
@@ -137,27 +142,36 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
     );
   }
 
-  Widget _buildFilterAndSearch(BuildContext context) {
+  Widget _buildFilterAndSearch(
+    BuildContext context,
+    WithdrawalRequestsState state,
+  ) {
+    final width = MediaQuery.of(context).size.width;
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: context.width > 768 ? 24 : 16,
+        horizontal: width > 768 ? 24 : 16,
         vertical: 12,
       ),
       child:
-          context.width > 768
-              ? _buildDesktopFilterBar()
-              : _buildMobileFilterBar(),
+          width > 768
+              ? _buildDesktopFilterBar(context, state)
+              : _buildMobileFilterBar(context, state),
     );
   }
 
-  Widget _buildDesktopFilterBar() {
+  Widget _buildDesktopFilterBar(
+    BuildContext context,
+    WithdrawalRequestsState state,
+  ) {
+    final bloc = context.read<WithdrawalRequestsBloc>();
     return Row(
       children: [
         // Search bar
         Expanded(
           flex: 2,
           child: TextField(
-            onChanged: controller.setSearchQuery,
+            onChanged:
+                (val) => bloc.add(WithdrawalRequestsSearchQueryChanged(val)),
             decoration: InputDecoration(
               hintText: 'Search by ID, Driver ID, or note...',
               prefixIcon: const Icon(Icons.search),
@@ -173,30 +187,29 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
         const SizedBox(width: 16),
 
         // Filter dropdown
-        Obx(
-          () => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.outline),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: controller.selectedFilter,
-                items:
-                    controller.filterOptions
-                        .map(
-                          (filter) => DropdownMenuItem(
-                            value: filter,
-                            child: Text(filter.capitalizeFirst!),
-                          ),
-                        )
-                        .toList(),
-                onChanged: (value) {
-                  if (value != null) controller.setFilter(value);
-                },
-              ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.outline),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: state.selectedFilter,
+              items:
+                  bloc.filterOptions
+                      .map(
+                        (filter) => DropdownMenuItem(
+                          value: filter,
+                          child: Text(filter.capitalizeFirst ?? filter),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (value) {
+                if (value != null)
+                  bloc.add(WithdrawalRequestsFilterChanged(value));
+              },
             ),
           ),
         ),
@@ -204,12 +217,17 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
     );
   }
 
-  Widget _buildMobileFilterBar() {
+  Widget _buildMobileFilterBar(
+    BuildContext context,
+    WithdrawalRequestsState state,
+  ) {
+    final bloc = context.read<WithdrawalRequestsBloc>();
     return Column(
       children: [
         // Search bar
         TextField(
-          onChanged: controller.setSearchQuery,
+          onChanged:
+              (val) => bloc.add(WithdrawalRequestsSearchQueryChanged(val)),
           decoration: InputDecoration(
             hintText: 'Search requests...',
             prefixIcon: const Icon(Icons.search),
@@ -224,142 +242,252 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
         const SizedBox(height: 12),
 
         // Filter chips
-        Obx(
-          () => SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children:
-                  controller.filterOptions.map((filter) {
-                    final isSelected = controller.selectedFilter == filter;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text(filter.capitalizeFirst!),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          if (selected) controller.setFilter(filter);
-                        },
-                        selectedColor: AppColors.primaryContainer,
-                        checkmarkColor: AppColors.primary,
-                      ),
-                    );
-                  }).toList(),
-            ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children:
+                bloc.filterOptions.map((filter) {
+                  final isSelected = state.selectedFilter == filter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text(filter.capitalizeFirst ?? filter),
+                      selected: isSelected,
+                      onSelected: (selected) {
+                        if (selected)
+                          bloc.add(WithdrawalRequestsFilterChanged(filter));
+                      },
+                      selectedColor: AppColors.primaryContainer,
+                      checkmarkColor: AppColors.primary,
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildRequestsList(BuildContext context) {
+  Widget _buildRequestsList(
+    BuildContext context,
+    WithdrawalRequestsState state,
+  ) {
     return RefreshIndicator(
-      onRefresh: controller.refreshData,
+      onRefresh: () async {
+        context.read<WithdrawalRequestsBloc>().add(
+          WithdrawalRequestsRefreshed(),
+        );
+      },
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 1024) {
-            return _buildDesktopTable();
+            return _buildDesktopTable(context, state);
           } else if (constraints.maxWidth > 768) {
-            return _buildTabletGrid();
+            return _buildTabletGrid(context, state);
           } else {
-            return _buildMobileList();
+            return _buildMobileList(context, state);
           }
         },
       ),
     );
   }
 
-  Widget _buildDesktopTable() {
-    return Obx(
-      () => SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.all(24),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.shadow.withOpacity(0.1),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: DataTable(
-            columnSpacing: 24,
-            horizontalMargin: 24,
-            columns: const [
-              DataColumn(label: Text('Request ID')),
-              DataColumn(label: Text('Driver ID')),
-              DataColumn(label: Text('Amount')),
-              DataColumn(label: Text('Status')),
-              DataColumn(label: Text('Date')),
-              DataColumn(label: Text('Actions')),
-            ],
-            rows:
-                controller.filteredRequests.map((request) {
-                  return DataRow(
-                    cells: [
-                      DataCell(Text('#${request.id}')),
-                      DataCell(Text('${request.driverId}')),
-                      DataCell(Text('₹${request.amount}')),
-                      DataCell(_buildStatusChip(request.status ?? '')),
-                      DataCell(Text(_formatDate(request.createdAt))),
-                      DataCell(_buildActionButtons(request)),
-                    ],
-                  );
-                }).toList(),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTabletGrid() {
-    return Obx(
-      () => GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.2,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: controller.filteredRequests.length,
-        itemBuilder: (context, index) {
-          final request = controller.filteredRequests[index];
-          return _WithdrawalRequestCard(
-            request: request,
-            onApprove: () => controller.approveRequest(request),
-            onReject: () => controller.showRejectionDialog(request),
-            onView: () => controller.openDriverDetails(request.driverId ?? 0),
-            isProcessing: controller.processingIds.contains(request.id),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildMobileList() {
-    return Obx(
-      () => ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: controller.filteredRequests.length,
-        itemBuilder: (context, index) {
-          final request = controller.filteredRequests[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _WithdrawalRequestCard(
-              request: request,
-              onApprove: () => controller.approveRequest(request),
-              onReject: () => controller.showRejectionDialog(request),
-              onView: () => controller.openDriverDetails(request.driverId ?? 0),
-              isProcessing: controller.processingIds.contains(request.id),
-              isMobile: true,
+  Widget _buildDesktopTable(
+    BuildContext context,
+    WithdrawalRequestsState state,
+  ) {
+    return SingleChildScrollView(
+      child: Container(
+        margin: const EdgeInsets.all(24),
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.shadow.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
+          ],
+        ),
+        child: DataTable(
+          columnSpacing: 24,
+          horizontalMargin: 24,
+          columns: const [
+            DataColumn(label: Text('Request ID')),
+            DataColumn(label: Text('Driver ID')),
+            DataColumn(label: Text('Amount')),
+            DataColumn(label: Text('Status')),
+            DataColumn(label: Text('Date')),
+            DataColumn(label: Text('Actions')),
+          ],
+          rows:
+              state.filteredRequests.map((request) {
+                return DataRow(
+                  cells: [
+                    DataCell(Text('#${request.id}')),
+                    DataCell(Text('${request.driverId}')),
+                    DataCell(Text('₹${request.amount}')),
+                    DataCell(_buildStatusChip(request.status ?? '')),
+                    DataCell(Text(_formatDate(request.createdAt))),
+                    DataCell(_buildActionButtons(context, request, state)),
+                  ],
+                );
+              }).toList(),
+        ),
       ),
+    );
+  }
+
+  Widget _buildTabletGrid(BuildContext context, WithdrawalRequestsState state) {
+    final bloc = context.read<WithdrawalRequestsBloc>();
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: state.filteredRequests.length,
+      itemBuilder: (context, index) {
+        final request = state.filteredRequests[index];
+        return _WithdrawalRequestCard(
+          request: request,
+          onApprove: () => bloc.add(WithdrawalRequestApproved(request)),
+          onReject: () => _showRejectionDialog(context, request),
+          onView: () => _openDriverDetails(request.driverId ?? 0),
+          isProcessing: state.processingIds.contains(request.id),
+        );
+      },
+    );
+  }
+
+  Widget _buildMobileList(BuildContext context, WithdrawalRequestsState state) {
+    final bloc = context.read<WithdrawalRequestsBloc>();
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.filteredRequests.length,
+      itemBuilder: (context, index) {
+        final request = state.filteredRequests[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _WithdrawalRequestCard(
+            request: request,
+            onApprove: () => bloc.add(WithdrawalRequestApproved(request)),
+            onReject: () => _showRejectionDialog(context, request),
+            onView: () => _openDriverDetails(request.driverId ?? 0),
+            isProcessing: state.processingIds.contains(request.id),
+            isMobile: true,
+          ),
+        );
+      },
+    );
+  }
+
+  void _showRejectionDialog(BuildContext context, Request request) {
+    final TextEditingController reasonController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final bloc = context.read<WithdrawalRequestsBloc>();
+
+    Get.dialog(
+      AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.cancel_outlined, color: AppColors.error),
+            const SizedBox(width: 8),
+            const Text('Reject Withdrawal Request'),
+          ],
+        ),
+        content: SizedBox(
+          width: Get.width > 600 ? 400 : Get.width * 0.9,
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Request Details:',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Request ID: #${request.id}'),
+                      Text('Driver ID: ${request.driverId}'),
+                      Text('Amount: ₹${request.amount}'),
+                      Text('Note: ${request.note ?? 'No note'}'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Rejection Reason:',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: reasonController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    hintText: 'Please provide a reason for rejection...',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please provide a rejection reason';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Get.back();
+                bloc.add(
+                  WithdrawalRequestRejected(
+                    request,
+                    reasonController.text.trim(),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: AppColors.onError,
+            ),
+            child: const Text('Reject Request'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openDriverDetails(int driverID) {
+    Get.toNamed(AppRoutes.driverDetails, arguments: {'id': driverID});
+    Get.snackbar(
+      'Driver Selected',
+      'Opening details for Driver ID : $driverID',
+      duration: const Duration(seconds: 2),
     );
   }
 
@@ -398,7 +526,7 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
           Icon(icon, size: 14, color: color),
           const SizedBox(width: 4),
           Text(
-            status.capitalizeFirst!,
+            status.capitalizeFirst ?? status,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -410,7 +538,11 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
     );
   }
 
-  Widget _buildActionButtons(Request request) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    Request request,
+    WithdrawalRequestsState state,
+  ) {
     if (request.status?.toLowerCase() != 'pending') {
       return Text(
         'No actions available',
@@ -418,7 +550,8 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
       );
     }
 
-    final isProcessing = controller.processingIds.contains(request.id);
+    final isProcessing = state.processingIds.contains(request.id);
+    final bloc = context.read<WithdrawalRequestsBloc>();
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -431,22 +564,21 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
           ),
         ] else ...[
           IconButton(
-            onPressed: () => controller.approveRequest(request),
+            onPressed: () => bloc.add(WithdrawalRequestApproved(request)),
             icon: const Icon(Icons.check, color: AppColors.success),
             tooltip: 'Approve',
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
           const SizedBox(width: 4),
           IconButton(
-            onPressed: () => controller.showRejectionDialog(request),
+            onPressed: () => _showRejectionDialog(context, request),
             icon: const Icon(Icons.close, color: AppColors.error),
             tooltip: 'Reject',
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
           ),
           const SizedBox(width: 4),
           IconButton(
-            onPressed:
-                () => controller.openDriverDetails(request.driverId ?? 0),
+            onPressed: () => _openDriverDetails(request.driverId ?? 0),
             icon: const Icon(
               Icons.remove_red_eye_outlined,
               color: AppColors.info,
@@ -459,7 +591,7 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -472,21 +604,24 @@ class WithdrawalRequestsView extends GetView<WithdrawalRequestsController> {
           const SizedBox(height: 16),
           Text(
             'No withdrawal requests found',
-            style: Get.textTheme.titleLarge?.copyWith(
-              color: AppColors.textSecondary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
           Text(
             'Withdrawal requests will appear here when available',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: AppColors.textTertiary,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: controller.refreshData,
+            onPressed:
+                () => context.read<WithdrawalRequestsBloc>().add(
+                  WithdrawalRequestsRefreshed(),
+                ),
             icon: const Icon(Icons.refresh),
             label: const Text('Refresh'),
           ),
@@ -551,13 +686,12 @@ class _WithdrawalRequestCard extends StatelessWidget {
                     children: [
                       Text(
                         'Request #${request.id}',
-                        style: Get.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
                         'Driver ID: ${request.driverId}',
-                        style: Get.textTheme.bodyMedium?.copyWith(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -575,7 +709,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '₹${request.amount}',
-                  style: Get.textTheme.headlineSmall?.copyWith(
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppColors.success,
                   ),
@@ -587,9 +721,9 @@ class _WithdrawalRequestCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Note: ${request.note}',
-                style: Get.textTheme.bodySmall?.copyWith(
-                  color: AppColors.textTertiary,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -607,7 +741,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
                 const SizedBox(width: 4),
                 Text(
                   _formatDate(request.createdAt),
-                  style: Get.textTheme.bodySmall?.copyWith(
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.textTertiary,
                   ),
                 ),
@@ -632,7 +766,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         'Processing...',
-                        style: Get.textTheme.bodySmall?.copyWith(
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: AppColors.textSecondary,
                         ),
                       ),
@@ -725,7 +859,7 @@ class _WithdrawalRequestCard extends StatelessWidget {
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
           Text(
-            status.capitalizeFirst!,
+            status.capitalizeFirst ?? status,
             style: TextStyle(
               color: color,
               fontWeight: FontWeight.w600,
@@ -755,37 +889,3 @@ class _WithdrawalRequestCard extends StatelessWidget {
     }
   }
 }
-
-// =============================================================================
-// USAGE EXAMPLE - How to integrate with your route system
-// =============================================================================
-
-/*
-// In your app_routes.dart
-abstract class AppRoutes {
-  static const withdrawalRequests = '/admin/withdrawal-requests';
-}
-
-// In your route.dart
-GetPage(
-  name: AppRoutes.withdrawalRequests,
-  page: () => AdminPanelLayout(
-    child: const WithdrawalRequestsView(),
-  ),
-  binding: WithdrawalRequestsBinding(),
-  transition: Transition.rightToLeft,
-),
-
-// Navigation from anywhere in your app:
-Get.toNamed(AppRoutes.withdrawalRequests);
-
-// Or add to your admin navigation items:
-NavigationItem(
-  id: 6,
-  title: 'Withdrawals',
-  icon: Icons.account_balance_wallet,
-  route: AppRoutes.withdrawalRequests,
-  breadcrumbs: ['Home', 'Admin', 'Withdrawals'],
-  badge: '5', // Show pending count
-),
-*/

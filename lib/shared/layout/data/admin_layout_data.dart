@@ -128,5 +128,12 @@ class AdminNavigationItems {
       route: '/admin/reports',
       breadcrumbs: ['Home', 'Reports'],
     ),
+    NavigationItem(
+      id: 7,
+      title: 'RBAC',
+      icon: Icons.security,
+      route: '/admin/rbac',
+      breadcrumbs: ['Home', 'RBAC'],
+    ),
   ];
 }

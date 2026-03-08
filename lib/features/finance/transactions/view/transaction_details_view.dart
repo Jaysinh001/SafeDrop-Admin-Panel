@@ -1,78 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 
 import '../../../../shared/widgets/loading_view.dart';
-import '../controller/transaction_details_controller.dart';
+import '../../../../core/dependencies/injection_container.dart';
+import '../bloc/transaction_details_bloc.dart';
+import '../bloc/transaction_details_event.dart';
+import '../bloc/transaction_details_state.dart';
 import '../model/transaction_details_model.dart';
+import '../model/transactions_list_model.dart' as tlm;
 
-class TransactionDetailsView extends GetView<TransactionDetailsController> {
+class TransactionDetailsView extends StatefulWidget {
   const TransactionDetailsView({super.key});
 
   @override
+  State<TransactionDetailsView> createState() => _TransactionDetailsViewState();
+}
+
+class _TransactionDetailsViewState extends State<TransactionDetailsView> {
+  late TransactionDetailsBloc _bloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _bloc = sl<TransactionDetailsBloc>();
+
+    // Process arguments like controller did
+    final args = Get.arguments;
+    if (args is tlm.Transaction) {
+      _bloc.add(
+        TransactionDetailsLoaded(transaction: args, transactionId: args.id),
+      );
+    } else if (args is Map && args['id'] != null) {
+      _bloc.add(TransactionDetailsLoaded(transactionId: args['id']));
+    } else {
+      _bloc.add(const TransactionDetailsLoaded());
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Transaction Details'),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.grey[800],
-        actions: [
-          IconButton(
-            onPressed: controller.refreshData,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-        ],
+    return BlocProvider.value(
+      value: _bloc,
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          title: const Text('Transaction Details'),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.grey[800],
+          actions: [
+            IconButton(
+              onPressed: () => _bloc.add(TransactionDetailsRefreshed()),
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+            ),
+          ],
+        ),
+        body: BlocBuilder<TransactionDetailsBloc, TransactionDetailsState>(
+          builder: (context, state) {
+            if (state.isLoading) {
+              return const LoadingView(title: "Loading Transaction Details...");
+            }
+
+            if (state.transaction == null) {
+              return _buildErrorState();
+            }
+
+            return _buildContent(context, state);
+          },
+        ),
       ),
-      body: Obx(() {
-        if (controller.isLoading) {
-          return const LoadingView(title: "Loading Transaction Details...");
-        }
-
-        if (controller.transaction == null) {
-          return _buildErrorState();
-        }
-
-        return _buildContent(context);
-      }),
     );
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, TransactionDetailsState state) {
     return SingleChildScrollView(
       child: Column(
         children: [
           // Header Card with Status
-          _buildHeaderCard(context),
-          
+          _buildHeaderCard(context, state),
+
           const SizedBox(height: 16),
-          
+
           // Transaction Information
-          _buildTransactionInfoCard(context),
-          
+          _buildTransactionInfoCard(context, state),
+
           const SizedBox(height: 16),
-          
+
           // Student & Driver Information
-          _buildParticipantsCard(context),
-          
+          _buildParticipantsCard(context, state),
+
           const SizedBox(height: 16),
-          
+
           // Payment Logs Timeline
-          _buildPaymentLogsCard(context),
-          
+          _buildPaymentLogsCard(context, state),
+
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildHeaderCard(BuildContext context) {
-    final transaction = controller.transaction!;
+  Widget _buildHeaderCard(BuildContext context, TransactionDetailsState state) {
+    final transaction = state.transaction!;
     final statusColor = _getStatusColor(transaction.status ?? '');
-    
+
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(24),
@@ -106,9 +141,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               color: Colors.white,
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Status Text
           Text(
             (transaction.status ?? 'Unknown').toUpperCase(),
@@ -119,9 +154,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               letterSpacing: 1.2,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Transaction ID
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -145,7 +180,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
                 const SizedBox(width: 8),
                 GestureDetector(
                   onTap: () {
-                    Clipboard.setData(ClipboardData(text: transaction.id.toString()));
+                    Clipboard.setData(
+                      ClipboardData(text: transaction.id.toString()),
+                    );
                     Get.snackbar(
                       'Copied',
                       'Transaction ID copied to clipboard',
@@ -160,9 +197,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Amount
           Text(
             '₹${transaction.amount ?? 0}',
@@ -172,9 +209,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               color: Colors.white,
             ),
           ),
-          
+
           const SizedBox(height: 8),
-          
+
           // Transaction Mode
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -186,8 +223,8 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  transaction.transactionMode?.toLowerCase() == 'online' 
-                      ? Icons.language 
+                  transaction.transactionMode?.toLowerCase() == 'online'
+                      ? Icons.language
                       : Icons.money,
                   size: 16,
                   color: Colors.white,
@@ -210,9 +247,12 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
     );
   }
 
-  Widget _buildTransactionInfoCard(BuildContext context) {
-    final transaction = controller.transaction!;
-    
+  Widget _buildTransactionInfoCard(
+    BuildContext context,
+    TransactionDetailsState state,
+  ) {
+    final transaction = state.transaction!;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -238,38 +278,39 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
                   color: Colors.blue.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Colors.blue,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
                 'Transaction Information',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           _buildInfoRow(
             icon: Icons.fingerprint,
             label: 'Reference ID',
             value: transaction.referenceId ?? 'N/A',
             canCopy: true,
           ),
-          
+
           const Divider(height: 24),
-          
+
           _buildInfoRow(
             icon: Icons.access_time,
             label: 'Created At',
             value: _formatDateTime(transaction.createdAt),
           ),
-          
+
           const Divider(height: 24),
-          
+
           _buildInfoRow(
             icon: Icons.update,
             label: 'Last Updated',
@@ -280,9 +321,12 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
     );
   }
 
-  Widget _buildParticipantsCard(BuildContext context) {
-    final transaction = controller.transaction!;
-    
+  Widget _buildParticipantsCard(
+    BuildContext context,
+    TransactionDetailsState state,
+  ) {
+    final transaction = state.transaction!;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -308,21 +352,22 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
                   color: Colors.purple.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.people_outline, color: Colors.purple, size: 20),
+                child: const Icon(
+                  Icons.people_outline,
+                  color: Colors.purple,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               const Text(
                 'Participants',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Student Card
           _buildParticipantCard(
             name: transaction.studentName ?? 'Unknown Student',
@@ -330,11 +375,19 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
             role: 'Student',
             color: Colors.blue,
             icon: Icons.school,
-            onTap: () => controller.viewStudentDetails(),
+            onTap: () {
+              if (transaction.studentId != null) {
+                Get.snackbar(
+                  'Student Details',
+                  'Opening details for ${transaction.studentName}',
+                );
+                // Get.toNamed(AppRoutes.studentDetails, arguments: transaction.studentId);
+              }
+            },
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Driver Card
           _buildParticipantCard(
             name: transaction.driverName ?? 'Unknown Driver',
@@ -342,7 +395,15 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
             role: 'Driver',
             color: Colors.orange,
             icon: Icons.local_shipping,
-            onTap: () => controller.viewDriverDetails(),
+            onTap: () {
+              if (transaction.driverId != null) {
+                Get.snackbar(
+                  'Driver Details',
+                  'Opening details for ${transaction.driverName}',
+                );
+                // Get.toNamed(AppRoutes.driverDetails, arguments: transaction.driverId);
+              }
+            },
           ),
         ],
       ),
@@ -400,10 +461,7 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
                       ),
                       Text(
                         ' • ID: $id',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -417,13 +475,16 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
     );
   }
 
-  Widget _buildPaymentLogsCard(BuildContext context) {
-    final logs = controller.paymentLogs;
-    
+  Widget _buildPaymentLogsCard(
+    BuildContext context,
+    TransactionDetailsState state,
+  ) {
+    final logs = state.paymentLogs;
+
     if (logs.isEmpty) {
       return const SizedBox.shrink();
     }
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
@@ -454,14 +515,14 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               const SizedBox(width: 12),
               const Text(
                 'Payment History',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const Spacer(),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(12),
@@ -477,9 +538,9 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           // Timeline
           ListView.builder(
             shrinkWrap: true,
@@ -488,11 +549,8 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
             itemBuilder: (context, index) {
               final log = logs[index];
               final isLast = index == logs.length - 1;
-              
-              return _buildTimelineItem(
-                log: log,
-                isLast: isLast,
-              );
+
+              return _buildTimelineItem(log: log, isLast: isLast);
             },
           ),
         ],
@@ -500,10 +558,7 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
     );
   }
 
-  Widget _buildTimelineItem({
-    required PaymentLog log,
-    required bool isLast,
-  }) {
+  Widget _buildTimelineItem({required PaymentLog log, required bool isLast}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -520,16 +575,12 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
               ),
             ),
             if (!isLast)
-              Container(
-                width: 2,
-                height: 60,
-                color: Colors.grey[300],
-              ),
+              Container(width: 2, height: 60, color: Colors.grey[300]),
           ],
         ),
-        
+
         const SizedBox(width: 16),
-        
+
         // Content
         Expanded(
           child: Container(
@@ -557,10 +608,7 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
                     const SizedBox(width: 4),
                     Text(
                       _formatDateTime(log.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -630,24 +678,16 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.error_outline, size: 64, color: Colors.grey[400]),
           const SizedBox(height: 16),
           Text(
             'Transaction not found',
-            style: Get.textTheme.titleLarge?.copyWith(
-              color: Colors.grey[600],
-            ),
+            style: Get.textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
           ),
           const SizedBox(height: 8),
           Text(
             'Unable to load transaction details',
-            style: Get.textTheme.bodyMedium?.copyWith(
-              color: Colors.grey[500],
-            ),
+            style: Get.textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -692,10 +732,10 @@ class TransactionDetailsView extends GetView<TransactionDetailsController> {
 
   String _formatDateTime(DateTime? dateTime) {
     if (dateTime == null) return 'N/A';
-    
+
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays == 0) {
       if (difference.inHours == 0) {
         if (difference.inMinutes == 0) {

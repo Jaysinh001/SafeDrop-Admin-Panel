@@ -1,54 +1,182 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/screen_container.dart';
-import '../controller/login_controller.dart';
+import '../../../core/routes/app_routes.dart';
+import '../../../core/dependencies/injection_container.dart';
+import '../bloc/login_bloc.dart';
+import '../bloc/login_event.dart';
+import '../bloc/login_state.dart';
 
-class LoginView extends GetView<LoginController> {
+class LoginView extends StatelessWidget {
   const LoginView({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: ResponsiveScreenContainer(
-        backgroundColor: _getBackgroundColor(context),
-        mobileLayout: _buildMobileLayout(),
-        tabletLayout: _buildTabletLayout(),
-        desktopLayout: _buildDesktopLayout(),
-        child: _buildDefaultLayout(),
+    return BlocProvider(
+      create: (context) => sl<LoginBloc>(),
+      child: const _LoginViewStateful(),
+    );
+  }
+}
+
+class _LoginViewStateful extends StatefulWidget {
+  const _LoginViewStateful();
+
+  @override
+  State<_LoginViewStateful> createState() => _LoginViewStatefulState();
+}
+
+class _LoginViewStatefulState extends State<_LoginViewStateful>
+    with SingleTickerProviderStateMixin {
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final formKey = GlobalKey<FormState>();
+
+  late AnimationController fadeController;
+  late Animation<double> fadeAnimation;
+  late Animation<Offset> slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _setupAnimations();
+  }
+
+  void _setupAnimations() {
+    fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    );
+
+    fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: fadeController, curve: Curves.easeInOut));
+
+    slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(parent: fadeController, curve: Curves.easeOutCubic),
+    );
+
+    fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    fadeController.dispose();
+    super.dispose();
+  }
+
+  void _fillDemoCredentials() {
+    context.read<LoginBloc>().add(LoginDemoCredentialsFilled());
+    emailController.text = 'admin@example.com';
+    passwordController.text = 'password123';
+  }
+
+  void _login() {
+    if (formKey.currentState!.validate()) {
+      context.read<LoginBloc>().add(LoginEmailChanged(emailController.text));
+      context.read<LoginBloc>().add(
+        LoginPasswordChanged(passwordController.text),
+      );
+      context.read<LoginBloc>().add(LoginSubmitted());
+    }
+  }
+
+  String? _validateEmail(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your email';
+    }
+    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    if (!emailRegex.hasMatch(value)) {
+      return 'Please enter a valid email';
+    }
+    return null;
+  }
+
+  String? _validatePassword(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter your password';
+    }
+    if (value.length < 6) {
+      return 'Password must be at least 6 characters';
+    }
+    return null;
+  }
+
+  void _forgotPassword() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Forgot password functionality coming soon!'),
+        backgroundColor: Colors.blue,
       ),
-      // Floating action button for demo credentials (only in debug mode)
-      floatingActionButton:
-          kDebugMode
-              ? FloatingActionButton.small(
-                onPressed: controller.fillDemoCredentials,
-                tooltip: 'Fill demo credentials',
-                child: const Icon(Icons.person),
-              )
-              : null,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<LoginBloc, LoginState>(
+      listenWhen:
+          (previous, current) =>
+              previous.isSuccess != current.isSuccess && current.isSuccess,
+      listener: (context, state) {
+        if (state.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Login successful!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+          context.go(AppRoutes.dashboard);
+        }
+      },
+      child: Scaffold(
+        body: ResponsiveScreenContainer(
+          backgroundColor: _getBackgroundColor(context),
+          mobileLayout: _buildMobileLayout(),
+          tabletLayout: _buildTabletLayout(),
+          desktopLayout: _buildDesktopLayout(),
+          child: _buildDefaultLayout(),
+        ),
+        floatingActionButton:
+            kDebugMode
+                ? FloatingActionButton.small(
+                  onPressed: _fillDemoCredentials,
+                  tooltip: 'Fill demo credentials',
+                  child: const Icon(Icons.person),
+                )
+                : null,
+      ),
     );
   }
 
   Color _getBackgroundColor(BuildContext context) {
-    if (context.isWeb || context.isDesktop) {
+    final width = MediaQuery.of(context).size.width;
+    if (width >= 1024) {
       return const Color(0xFF1a1a2e);
     }
     return Colors.white;
   }
 
-  // Mobile Layout - Full screen form
   Widget _buildMobileLayout() {
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: AnimatedBuilder(
-          animation: controller.fadeAnimation,
+          animation: fadeAnimation,
           builder: (context, child) {
             return FadeTransition(
-              opacity: controller.fadeAnimation,
+              opacity: fadeAnimation,
               child: SlideTransition(
-                position: controller.slideAnimation,
+                position: slideAnimation,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -72,17 +200,16 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  // Tablet Layout - Centered card
   Widget _buildTabletLayout() {
     return Center(
       child: SingleChildScrollView(
         child: AnimatedBuilder(
-          animation: controller.fadeAnimation,
+          animation: fadeAnimation,
           builder: (context, child) {
             return FadeTransition(
-              opacity: controller.fadeAnimation,
+              opacity: fadeAnimation,
               child: SlideTransition(
-                position: controller.slideAnimation,
+                position: slideAnimation,
                 child: Container(
                   width: 500,
                   margin: const EdgeInsets.all(32),
@@ -118,11 +245,9 @@ class LoginView extends GetView<LoginController> {
     );
   }
 
-  // Desktop Layout - Split screen with branding
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Left side - Branding
         Expanded(
           flex: 3,
           child: Container(
@@ -134,10 +259,10 @@ class LoginView extends GetView<LoginController> {
               ),
             ),
             child: AnimatedBuilder(
-              animation: controller.fadeAnimation,
+              animation: fadeAnimation,
               builder: (context, child) {
                 return FadeTransition(
-                  opacity: controller.fadeAnimation,
+                  opacity: fadeAnimation,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -149,7 +274,9 @@ class LoginView extends GetView<LoginController> {
                       const SizedBox(height: 24),
                       Text(
                         'Admin Dashboard',
-                        style: Get.textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -157,9 +284,8 @@ class LoginView extends GetView<LoginController> {
                       const SizedBox(height: 12),
                       Text(
                         'Manage your application with ease',
-                        style: Get.textTheme.titleMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: Colors.white.withOpacity(0.8)),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -169,7 +295,6 @@ class LoginView extends GetView<LoginController> {
             ),
           ),
         ),
-        // Right side - Login form
         Expanded(
           flex: 2,
           child: Container(
@@ -178,12 +303,12 @@ class LoginView extends GetView<LoginController> {
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(48),
                 child: AnimatedBuilder(
-                  animation: controller.fadeAnimation,
+                  animation: fadeAnimation,
                   builder: (context, child) {
                     return FadeTransition(
-                      opacity: controller.fadeAnimation,
+                      opacity: fadeAnimation,
                       child: SlideTransition(
-                        position: controller.slideAnimation,
+                        position: slideAnimation,
                         child: Container(
                           constraints: const BoxConstraints(maxWidth: 400),
                           child: Column(
@@ -242,11 +367,12 @@ class LoginView extends GetView<LoginController> {
   }
 
   Widget _buildTitle(String text) {
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
     return Text(
       text,
-      style: Get.textTheme.headlineMedium?.copyWith(
+      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
         fontWeight: FontWeight.bold,
-        color: Get.context!.isDesktop ? Colors.grey[800] : null,
+        color: isDesktop ? Colors.grey[800] : null,
       ),
       textAlign: TextAlign.center,
     );
@@ -255,53 +381,65 @@ class LoginView extends GetView<LoginController> {
   Widget _buildSubtitle(String text) {
     return Text(
       text,
-      style: Get.textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+      style: Theme.of(
+        context,
+      ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
       textAlign: TextAlign.center,
     );
   }
 
   Widget _buildLoginForm() {
     return Form(
-      key: controller.formKey,
+      key: formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Error message display
-          Obx(() {
-            if (controller.errorMessage != null) {
-              return Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  border: Border.all(color: Colors.red.withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error_outline, color: Colors.red[700], size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        controller.errorMessage!,
-                        style: TextStyle(color: Colors.red[700]),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: controller.clearError,
-                      child: Icon(
-                        Icons.close,
+          BlocBuilder<LoginBloc, LoginState>(
+            buildWhen:
+                (previous, current) =>
+                    previous.errorMessage != current.errorMessage,
+            builder: (context, state) {
+              if (state.errorMessage != null) {
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
                         color: Colors.red[700],
-                        size: 16,
+                        size: 20,
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
-
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          state.errorMessage!,
+                          style: TextStyle(color: Colors.red[700]),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap:
+                            () => context.read<LoginBloc>().add(
+                              LoginErrorCleared(),
+                            ),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.red[700],
+                          size: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            },
+          ),
           _buildEmailField(),
           const SizedBox(height: 16),
           _buildPasswordField(),
@@ -316,7 +454,7 @@ class LoginView extends GetView<LoginController> {
 
   Widget _buildEmailField() {
     return TextFormField(
-      controller: controller.emailController,
+      controller: emailController,
       keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       decoration: InputDecoration(
@@ -326,94 +464,109 @@ class LoginView extends GetView<LoginController> {
         filled: true,
         fillColor: Colors.grey[50],
       ),
-      validator: controller.validateEmail,
+      validator: _validateEmail,
     );
   }
 
   Widget _buildPasswordField() {
-    return Obx(() {
-      return TextFormField(
-        controller: controller.passwordController,
-        obscureText: !controller.isPasswordVisible,
-        textInputAction: TextInputAction.done,
-        onFieldSubmitted: (_) => controller.login(),
-        decoration: InputDecoration(
-          labelText: 'Password',
-          prefixIcon: const Icon(Icons.lock_outlined),
-          suffixIcon: IconButton(
-            icon: Icon(
-              controller.isPasswordVisible
-                  ? Icons.visibility_off
-                  : Icons.visibility,
+    return BlocBuilder<LoginBloc, LoginState>(
+      buildWhen:
+          (previous, current) =>
+              previous.isPasswordVisible != current.isPasswordVisible,
+      builder: (context, state) {
+        return TextFormField(
+          controller: passwordController,
+          obscureText: !state.isPasswordVisible,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _login(),
+          decoration: InputDecoration(
+            labelText: 'Password',
+            prefixIcon: const Icon(Icons.lock_outlined),
+            suffixIcon: IconButton(
+              icon: Icon(
+                state.isPasswordVisible
+                    ? Icons.visibility_off
+                    : Icons.visibility,
+              ),
+              onPressed:
+                  () => context.read<LoginBloc>().add(
+                    LoginPasswordVisibilityToggled(),
+                  ),
             ),
-            onPressed: controller.togglePasswordVisibility,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          filled: true,
-          fillColor: Colors.grey[50],
-        ),
-        validator: controller.validatePassword,
-      );
-    });
+          validator: _validatePassword,
+        );
+      },
+    );
   }
 
   Widget _buildRememberMeCheckbox() {
-    return Obx(() {
-      return Row(
-        children: [
-          Checkbox(
-            value: controller.rememberMe,
-            onChanged: controller.toggleRememberMe,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
+    return BlocBuilder<LoginBloc, LoginState>(
+      buildWhen:
+          (previous, current) => previous.rememberMe != current.rememberMe,
+      builder: (context, state) {
+        return Row(
+          children: [
+            Checkbox(
+              value: state.rememberMe,
+              onChanged:
+                  (value) => context.read<LoginBloc>().add(
+                    LoginRememberMeToggled(value ?? false),
+                  ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
-          ),
-          const Text('Remember me'),
-        ],
-      );
-    });
+            const Text('Remember me'),
+          ],
+        );
+      },
+    );
   }
 
   Widget _buildLoginButton() {
-    return Obx(() {
-      return ElevatedButton(
-        onPressed: controller.isLoading ? null : controller.login,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    return BlocBuilder<LoginBloc, LoginState>(
+      buildWhen: (previous, current) => previous.isLoading != current.isLoading,
+      builder: (context, state) {
+        return ElevatedButton(
+          onPressed: state.isLoading ? null : _login,
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            backgroundColor: const Color(0xFF667eea),
+            foregroundColor: Colors.white,
+            elevation: 2,
           ),
-          backgroundColor: const Color(0xFF667eea),
-          foregroundColor: Colors.white,
-          elevation: 2,
-        ),
-        child:
-            controller.isLoading
-                ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          child:
+              state.isLoading
+                  ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                  : const Text(
+                    'Sign In',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                )
-                : const Text(
-                  'Sign In',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-      );
-    });
+        );
+      },
+    );
   }
 
   Widget _buildForgotPasswordLink() {
     return TextButton(
-      onPressed: controller.forgotPassword,
-      child: Text(
+      onPressed: _forgotPassword,
+      child: const Text(
         'Forgot Password?',
-        style: TextStyle(
-          color: const Color(0xFF667eea),
-          fontWeight: FontWeight.w500,
-        ),
+        style: TextStyle(color: Color(0xFF667eea), fontWeight: FontWeight.w500),
       ),
     );
   }
