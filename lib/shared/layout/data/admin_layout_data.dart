@@ -184,14 +184,14 @@ class AdminNavigationItems {
           id: 12,
           title: 'Drivers',
           icon: Icons.drive_eta_rounded,
-          route: '/users/drivers',
+          route: AppRoutes.driversList,
           breadcrumbs: ['Home', 'Users', 'Drivers'],
         ),
         NavigationItem(
           id: 13,
           title: 'Students',
           icon: Icons.school_rounded,
-          route: '/users/students',
+          route: AppRoutes.studentsList,
           breadcrumbs: ['Home', 'Users', 'Students'],
         ),
         NavigationItem(
@@ -455,7 +455,7 @@ class AdminNavigationItems {
           id: 81,
           title: 'Announcements',
           icon: Icons.campaign_rounded,
-          route: '/communication/announcements',
+          route: AppRoutes.announcements,
           breadcrumbs: ['Home', 'Communication', 'Announcements'],
         ),
         NavigationItem(
@@ -482,7 +482,7 @@ class AdminNavigationItems {
       id: 9,
       title: 'Audit Log',
       icon: Icons.policy_rounded,
-      route: '/audit-log',
+      route: AppRoutes.auditLogs,
       breadcrumbs: ['Home', 'Audit Log'],
     ),
 
