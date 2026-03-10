@@ -28,6 +28,7 @@ abstract class AppRoutes {
   static const userManagement = '/admin/users';
   static const analytics = '/admin/analytics';
   static const settings = '/admin/settings';
+  static const organizationProfile = '/admin/settings/organization_profile';
   static const reports = '/admin/reports';
   static const rbac = '/admin/rbac';
 
@@ -36,6 +37,8 @@ abstract class AppRoutes {
   static const contentList = '/content/list';
   static const createContent = '/content/create';
   static const mediaLibrary = '/content/media';
+
+
 
   // Error Routes
   static const notFound = '/404';

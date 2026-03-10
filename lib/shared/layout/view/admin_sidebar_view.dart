@@ -123,7 +123,7 @@ class AdminSideBar extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),

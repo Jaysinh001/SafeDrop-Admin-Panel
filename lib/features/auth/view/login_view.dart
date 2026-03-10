@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/utility/app_snackbar.dart';
 import '../../../shared/widgets/screen_container.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/dependencies/injection_container.dart';
@@ -112,12 +113,14 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   void _forgotPassword() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Forgot password functionality coming soon!'),
-        backgroundColor: Colors.blue,
-      ),
-    );
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   const SnackBar(
+    //     content: Text('Forgot password functionality coming soon!'),
+    //     backgroundColor: Colors.blue,
+    //   ),
+    // );
+
+    AppSnackbar.info(context, "We are working on this feature", title:  'Coming Soon!');
   }
 
   @override
@@ -128,13 +131,15 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
               previous.isSuccess != current.isSuccess && current.isSuccess,
       listener: (context, state) {
         if (state.isSuccess) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Login successful!'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+          // ScaffoldMessenger.of(context).showSnackBar(
+          //   const SnackBar(
+          //     content: Text('Login successful!'),
+          //     backgroundColor: Colors.green,
+          //     duration: Duration(seconds: 3),
+          //   ),
+          // );
+
+          AppSnackbar.success(context, "Login Successful!");
           context.go(AppRoutes.dashboard);
         }
       },
