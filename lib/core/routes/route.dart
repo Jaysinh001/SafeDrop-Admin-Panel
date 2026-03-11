@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import '../../features/announcements/view/announcements_view.dart';
+import '../../features/audit_logs/view/audit_logs_view.dart';
 import '../../features/auth/view/login_view.dart';
 import '../../features/dashboard/view/dashboard_view.dart';
 import '../../features/finance/transactions/view/transaction_details_view.dart';
@@ -90,13 +92,13 @@ class AppPages {
 
           // Placeholder Routes for missing views
           GoRoute(
-            path: '/users',
-            builder: (context, state) => const PlaceholderView(title: 'Users'),
+            path: AppRoutes.auditLogs,
+            builder: (context, state) => const AuditLogView(),
           ),
           GoRoute(
-            path: '/finance',
+            path: AppRoutes.announcements,
             builder:
-                (context, state) => const PlaceholderView(title: 'Finance'),
+                (context, state) => const AnnouncementsView(),
           ),
           GoRoute(
             path: AppRoutes.content,

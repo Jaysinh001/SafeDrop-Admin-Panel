@@ -44,7 +44,12 @@ abstract class AppRoutes {
   static const createContent = '/content/create';
   static const mediaLibrary = '/content/media';
 
+  // Audit and Logs Routes
+  static const auditLogs = '/audit/logs';
 
+  // Comunication Routes
+  static const notifications = '/communication/notifications';
+  static const announcements = '/communication/announcements';
 
   // Error Routes
   static const notFound = '/404';
