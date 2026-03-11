@@ -4,6 +4,7 @@ import '../../features/dashboard/view/dashboard_view.dart';
 import '../../features/finance/transactions/view/transaction_details_view.dart';
 import '../../features/finance/transactions/view/transactions_list_view.dart';
 import '../../features/settings/organization_profile/view/organization_profile_view.dart';
+import '../../features/splash/view/splash_screen.dart';
 import '../../features/users/driver/view/drivers_list_view.dart';
 import '../../features/users/driver/view/driver_detail_view.dart';
 import '../../features/users/student/view/student_detail_view.dart';
@@ -20,13 +21,19 @@ import 'app_routes.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class AppPages {
-  static const initial = AppRoutes.login;
+  static const initial = AppRoutes.splash;
 
   static final GoRouter router = GoRouter(
     initialLocation: initial,
     debugLogDiagnostics: true,
     errorBuilder: (context, state) => const NotFoundScreen(),
     routes: [
+
+      GoRoute(
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
+
       // Authentication Routes
       GoRoute(
         path: AppRoutes.login,

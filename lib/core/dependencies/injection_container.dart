@@ -53,7 +53,6 @@ Future<void> initLocator() async {
   );
 
   /// CORE BLOCS
-
   sl.registerLazySingleton<AdminLayoutBloc>(
     () => AdminLayoutBloc(),
   );

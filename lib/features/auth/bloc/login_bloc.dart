@@ -1,19 +1,20 @@
+import 'dart:developer';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../core/data/local_storage/local_storage_service_impl.dart';
+import '../../../core/data/local_storage/hive_boxes.dart';
+import '../../../core/data/local_storage/local_storage_service.dart';
+import '../../../core/data/local_storage/storage_keys.dart';
 import '../repo/auth_repository.dart';
 import 'login_event.dart';
 import 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-
   final AuthRepository authRepository;
   final LocalStorageService storage;
 
-  LoginBloc({
-    required this.authRepository,
-    required this.storage,
-  }) : super(const LoginState()) {
+  LoginBloc({required this.authRepository, required this.storage})
+    : super(const LoginState()) {
     on<LoginEmailChanged>(_onEmailChanged);
     on<LoginPasswordChanged>(_onPasswordChanged);
     on<LoginPasswordVisibilityToggled>(_onPasswordVisibilityToggled);
@@ -80,16 +81,27 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
     emit(state.copyWith(isLoading: true, clearError: true));
 
     try {
-      // Simulate API call delay
-      await Future.delayed(const Duration(seconds: 2));
+      final res = await authRepository.login(
+        email: state.email,
+        password: state.password,
+      );
 
-      // Mock authentication logic
-      if (state.email == 'admin@example.com' &&
-          state.password == 'password123') {
+      log("response : ${res.data.toString()}");
+      if (res.success) {
+
         if (state.rememberMe) {
-          // Typically save to SharedPreferences here
-          print('Remember me enabled');
+           await storage.write(
+          box: HiveBoxes.authBox,
+          key: StorageKeys.saveSession,
+          value: true,
+        );
         }
+
+        await storage.write(
+          box: HiveBoxes.authBox,
+          key: StorageKeys.accessToken,
+          value: res.data["token"],
+        );
 
         emit(state.copyWith(isLoading: false, isSuccess: true));
       } else {

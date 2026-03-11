@@ -1,66 +1,31 @@
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'hive_boxes.dart';
-import 'local_storage_service_impl.dart';
+abstract class LocalStorageService {
 
-class LocalStorageServiceImpl implements LocalStorageService {
-
-  @override
+  /// WRITE
   Future<void> write({
     required String box,
     required String key,
     required dynamic value,
-  }) async {
+  });
 
-    final hiveBox = Hive.box(box);
-    await hiveBox.put(key, value);
+  /// READ
+  T? read<T>({
+    required String box,
+    required String key,
+  });
 
-  }
-
-@override
-T? read<T>({
-  required String box,
-  required String key,
-}) {
-
-  final hiveBox = Hive.box(box);
-  return hiveBox.get(key) as T?;
-
-}
-
-  @override
+  /// DELETE
   Future<void> delete({
     required String box,
     required String key,
-  }) async {
+  });
 
-    final hiveBox = Hive.box(box);
-    await hiveBox.delete(key);
+  /// CLEAR BOX
+  Future<void> clearBox(String box);
 
-  }
-
-  @override
-  Future<void> clearBox(String box) async {
-
-    final hiveBox = Hive.box(box);
-    await hiveBox.clear();
-
-  }
-
-@override
-Future<void> clearAll() async {
-
-  for (final boxName in HiveBoxes.allBoxes) {
-    await Hive.box(boxName).clear();
-  }
+  /// CLEAR ALL
+  Future<void> clearAll();
 
 }
 
-Future<void> deleteAll() async {
 
-  for (final boxName in HiveBoxes.allBoxes) {
-    await Hive.box(boxName).deleteFromDisk();
-  }
 
-}
-
-}

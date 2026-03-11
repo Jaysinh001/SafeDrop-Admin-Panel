@@ -1,6 +1,7 @@
 class StorageKeys {
 
   /// AUTH
+  static const saveSession = "save_session";
   static const accessToken = "access_token";
   static const refreshToken = "refresh_token";
 

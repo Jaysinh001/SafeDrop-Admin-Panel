@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/data/local_storage/hive_initializer.dart';
 import 'core/dependencies/injection_container.dart';
 import 'core/routes/route.dart';
 import 'core/theme/theme.dart';
@@ -6,6 +7,8 @@ import 'core/theme/theme_extension.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+    /// Initialize Hive
+  await HiveInitializer.init();
   await initLocator();
   runApp(const MyApp());
 }
