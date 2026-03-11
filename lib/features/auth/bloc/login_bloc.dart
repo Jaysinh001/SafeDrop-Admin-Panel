@@ -1,10 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/data/local_storage/local_storage_service_impl.dart';
+import '../repo/auth_repository.dart';
 import 'login_event.dart';
 import 'login_state.dart';
 
 class LoginBloc extends Bloc<LoginEvent, LoginState> {
-  LoginBloc() : super(const LoginState()) {
+
+  final AuthRepository authRepository;
+  final LocalStorageService storage;
+
+  LoginBloc({
+    required this.authRepository,
+    required this.storage,
+  }) : super(const LoginState()) {
     on<LoginEmailChanged>(_onEmailChanged);
     on<LoginPasswordChanged>(_onPasswordChanged);
     on<LoginPasswordVisibilityToggled>(_onPasswordVisibilityToggled);
