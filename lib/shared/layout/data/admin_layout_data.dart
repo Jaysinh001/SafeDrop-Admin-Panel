@@ -507,7 +507,7 @@ class AdminNavigationItems {
           id: 102,
           title: 'Subscription Plan',
           icon: Icons.workspace_premium_rounded,
-          route: '/settings/subscription',
+          route: AppRoutes.subscription,
           breadcrumbs: ['Home', 'Settings', 'Subscription Plan'],
         ),
         NavigationItem(

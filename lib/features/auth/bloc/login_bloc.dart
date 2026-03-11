@@ -59,8 +59,8 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   ) {
     emit(
       state.copyWith(
-        email: 'admin@example.com',
-        password: 'password123',
+        email: 'sanjay.nandan@capgemini.com',
+        password: 'Password123!',
         clearError: true,
       ),
     );

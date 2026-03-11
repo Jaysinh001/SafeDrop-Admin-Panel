@@ -58,6 +58,7 @@ Future<void> clearAll() async {
 
 }
 
+@override
 Future<void> deleteAll() async {
 
   for (final boxName in HiveBoxes.allBoxes) {

@@ -28,9 +28,15 @@ abstract class AppRoutes {
   static const userManagement = '/admin/users';
   static const analytics = '/admin/analytics';
   static const settings = '/admin/settings';
-  static const organizationProfile = '/admin/settings/organization_profile';
   static const reports = '/admin/reports';
   static const rbac = '/admin/rbac';
+
+// Settings routes
+  static const organizationProfile = '/settings/organization_profile';
+  static const subscription = '/settings/subscription';
+
+
+
 
   // Content Management Routes
   static const content = '/content';

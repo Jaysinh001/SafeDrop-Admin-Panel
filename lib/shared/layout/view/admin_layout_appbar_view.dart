@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/data/local_storage/local_storage_service.dart';
+import '../../../core/dependencies/injection_container.dart';
 import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/colors.dart';
 import '../../widgets/screen_container.dart';
@@ -240,9 +242,15 @@ class AdminAppBar extends StatelessWidget {
                 child: const Text('No'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  context.go(AppRoutes.login);
+                onPressed: () async {
+                  final storage = sl<LocalStorageService>();
+
+                  await storage.clearAll();
+
+                  if (context.mounted) {
+                    // Navigator.of(context).pop();
+                    context.go(AppRoutes.login);
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.error,

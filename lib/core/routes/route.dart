@@ -5,6 +5,7 @@ import '../../features/finance/transactions/view/transaction_details_view.dart';
 import '../../features/finance/transactions/view/transactions_list_view.dart';
 import '../../features/settings/organization_profile/view/organization_profile_view.dart';
 import '../../features/splash/view/splash_screen.dart';
+import '../../features/subscription_plan/view/subscription_view.dart';
 import '../../features/users/driver/view/drivers_list_view.dart';
 import '../../features/users/driver/view/driver_detail_view.dart';
 import '../../features/users/student/view/student_detail_view.dart';
@@ -81,6 +82,10 @@ class AppPages {
           GoRoute(
             path: AppRoutes.organizationProfile,
             builder: (context, state) => const OrganizationDetailsView(),
+          ),
+          GoRoute(
+            path: AppRoutes.subscription,
+            builder: (context, state) => const SubscriptionView(),
           ),
 
           // Placeholder Routes for missing views

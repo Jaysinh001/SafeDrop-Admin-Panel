@@ -77,8 +77,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   void _fillDemoCredentials() {
     context.read<LoginBloc>().add(LoginDemoCredentialsFilled());
-    emailController.text = 'admin@example.com';
-    passwordController.text = 'password123';
+    emailController.text = 'sanjay.nandan@capgemini.com';
+    passwordController.text = 'Password123!';
   }
 
   void _login() {
@@ -113,13 +113,6 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   void _forgotPassword() {
-    // ScaffoldMessenger.of(context).showSnackBar(
-    //   const SnackBar(
-    //     content: Text('Forgot password functionality coming soon!'),
-    //     backgroundColor: Colors.blue,
-    //   ),
-    // );
-
     AppSnackbar.info(context, "We are working on this feature", title:  'Coming Soon!');
   }
 

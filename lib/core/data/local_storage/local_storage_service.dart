@@ -25,6 +25,9 @@ abstract class LocalStorageService {
   /// CLEAR ALL
   Future<void> clearAll();
 
+  /// DELETE ALL
+  Future<void> deleteAll();
+
 }
 
 
