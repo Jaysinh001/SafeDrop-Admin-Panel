@@ -28,11 +28,11 @@ class StudentDetailsView extends StatelessWidget {
   ];
 
   int _getStudentId() {
-    if (arguments is slr.Student) {
-      return (arguments as slr.Student).studentId ?? 0;
-    } else if (arguments is Map && (arguments as Map)['id'] != null) {
-      return (arguments as Map)['id'];
-    }
+    // if (arguments is slr.Student) {
+    //   return (arguments as slr.Student).studentId ?? 0;
+    // } else if (arguments is Map && (arguments as Map)['id'] != null) {
+    //   return (arguments as Map)['id'];
+    // }
     return 0;
   }
 

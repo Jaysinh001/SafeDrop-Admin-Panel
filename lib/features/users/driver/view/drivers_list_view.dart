@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routes/app_routes.dart';
+import '../../../../core/theme/colors.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
 import '../bloc/driver_list_bloc/drivers_list_bloc.dart';
@@ -19,35 +20,21 @@ class DriversListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocProvider.value(
       value: sl<DriversListBloc>(),
       child: BlocListener<DriversListBloc, DriversListState>(
         listener: _handleStateChanges,
         child: Scaffold(
-          backgroundColor: Colors.grey[50],
+          backgroundColor: colorScheme.surface,
           body: BlocBuilder<DriversListBloc, DriversListState>(
             builder: (context, state) {
               return Column(
                 children: [
                   _buildHeader(context, state),
                   _buildFilterAndSearch(context, state),
-                  Expanded(
-                    child: () {
-                      if (state.status == DriversListStatus.loading) {
-                        return const LoadingView(title: 'Loading drivers...');
-                      }
-
-                      if (state.status == DriversListStatus.error) {
-                        return _buildErrorState(context, state);
-                      }
-
-                      if (state.filteredDrivers.isEmpty) {
-                        return _buildEmptyState(context);
-                      }
-
-                      return _buildDriversList(context, state);
-                    }(),
-                  ),
+                  Expanded(child: _buildBody(context, state)),
                 ],
               );
             },
@@ -66,32 +53,55 @@ class DriversListView extends StatelessWidget {
   }
 
   void _handleStateChanges(BuildContext context, DriversListState state) {
-    // Show error snackbar
-    if (state.errorMessage != null && state.status == DriversListStatus.error) {
+    if (state.errorMessage != null &&
+        state.status == DriversListStatus.error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(state.errorMessage!),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: 'Retry',
             textColor: Colors.white,
-            onPressed: () {
-              context.read<DriversListBloc>().add(DriversListRefreshed());
-            },
+            onPressed: () =>
+                context.read<DriversListBloc>().add(DriversListRefreshed()),
           ),
         ),
       );
     }
   }
 
+  Widget _buildBody(BuildContext context, DriversListState state) {
+    if (state.status == DriversListStatus.loading) {
+      return const LoadingView(title: 'Loading drivers...');
+    }
+    if (state.status == DriversListStatus.error) {
+      return _buildErrorState(context, state);
+    }
+    if (state.filteredDrivers.isEmpty) {
+      return _buildEmptyState(context);
+    }
+    return _buildDriversList(context, state);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Header
+  // ---------------------------------------------------------------------------
+
   Widget _buildHeader(BuildContext context, DriversListState state) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: EdgeInsets.all(width > 768 ? 24 : 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -103,40 +113,44 @@ class DriversListView extends StatelessWidget {
                   'Drivers Management',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${state.filteredDrivers.length} drivers found',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
-          if (width > 768) _buildQuickStats(state),
+          if (width > 768) _buildQuickStats(context, state),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStats(DriversListState state) {
+  Widget _buildQuickStats(BuildContext context, DriversListState state) {
     final stats = state.driverStats;
     return Row(
       children: [
-        _buildStatChip('Total', stats['total'] ?? 0, Colors.blue),
+        _buildStatChip('Total', stats['total'] ?? 0, AppColors.primary),
         const SizedBox(width: 8),
-        _buildStatChip('Active', stats['active'] ?? 0, Colors.green),
+        _buildStatChip('Active', stats['active'] ?? 0, AppColors.success),
         const SizedBox(width: 8),
         _buildStatChip(
-          'Bank Details',
-          stats['with_bank_details'] ?? 0,
-          Colors.orange,
+          'Independent',
+          stats['independent'] ?? 0,
+          AppColors.warning,
         ),
         const SizedBox(width: 8),
-        _buildStatChip('MPIN Set', stats['mpin_set'] ?? 0, Colors.purple),
+        _buildStatChip(
+          'Employed',
+          stats['employed'] ?? 0,
+          AppColors.info,
+        ),
       ],
     );
   }
@@ -171,16 +185,27 @@ class DriversListView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Filter & Search Bar
+  // ---------------------------------------------------------------------------
+
   Widget _buildFilterAndSearch(BuildContext context, DriversListState state) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: width > 768 ? 24 : 16,
         vertical: 16,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
+        ),
       ),
       child: width > 768
           ? _buildDesktopFilterBar(context, state)
@@ -188,20 +213,27 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  Widget _buildDesktopFilterBar(BuildContext context, DriversListState state) {
+  Widget _buildDesktopFilterBar(
+    BuildContext context,
+    DriversListState state,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
     final bloc = context.read<DriversListBloc>();
+    
     return Row(
       children: [
-        // Search bar
+        // Search
         Expanded(
           flex: 2,
           child: TextField(
-            onChanged: (val) => bloc.add(DriversListSearchQueryChanged(val)),
+            onChanged: (val) =>
+                bloc.add(DriversListSearchQueryChanged(val)),
             decoration: InputDecoration(
-              hintText: 'Search by name, email, phone, or ID...',
+              hintText:
+                  'Search by name, email, phone, ID, or employment status...',
               prefixIcon: const Icon(Icons.search),
               filled: true,
-              fillColor: Colors.grey[100],
+              fillColor: colorScheme.surfaceContainer,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -216,51 +248,47 @@ class DriversListView extends StatelessWidget {
         const SizedBox(width: 16),
 
         // Filter dropdown
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
+        _buildDropdownContainer(
+          context: context,
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: state.selectedFilter,
               hint: const Text('Filter'),
               items: const [
-                DropdownMenuItem(value: 'all', child: Text('All Drivers')),
-                DropdownMenuItem(value: 'active', child: Text('Active')),
                 DropdownMenuItem(
-                  value: 'with_bank_details',
-                  child: Text('With Bank Details'),
+                  value: 'all',
+                  child: Text('All Drivers'),
                 ),
                 DropdownMenuItem(
-                  value: 'without_bank_details',
-                  child: Text('Without Bank Details'),
+                  value: 'independent',
+                  child: Text('Independent'),
                 ),
-                DropdownMenuItem(value: 'mpin_set', child: Text('MPIN Set')),
                 DropdownMenuItem(
-                  value: 'mpin_not_set',
-                  child: Text('MPIN Not Set'),
+                  value: 'employed',
+                  child: Text('Employed'),
+                ),
+                DropdownMenuItem(
+                  value: 'employed_status',
+                  child: Text('Has Employment Status'),
+                ),
+                DropdownMenuItem(
+                  value: 'no_status',
+                  child: Text('No Status'),
                 ),
               ],
               onChanged: (value) {
-                if (value != null) bloc.add(DriversListFilterChanged(value));
+                if (value != null) {
+                  bloc.add(DriversListFilterChanged(value));
+                }
               },
             ),
           ),
         ),
-
         const SizedBox(width: 16),
 
         // Sort dropdown
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
+        _buildDropdownContainer(
+          context: context,
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: state.sortBy,
@@ -272,22 +300,29 @@ class DriversListView extends StatelessWidget {
                   value: 'created_date',
                   child: Text('Join Date'),
                 ),
-                DropdownMenuItem(value: 'unique_code', child: Text('Code ID')),
+                DropdownMenuItem(
+                  value: 'employment_status',
+                  child: Text('Employment Status'),
+                ),
               ],
               onChanged: (value) {
-                if (value != null) bloc.add(DriversListSortByChanged(value));
+                if (value != null) {
+                  bloc.add(DriversListSortByChanged(value));
+                }
               },
             ),
           ),
         ),
-
         const SizedBox(width: 8),
 
-        // Sort direction
+        // Sort direction toggle
         IconButton(
-          onPressed: () => bloc.add(DriversListSortByChanged(state.sortBy)),
+          onPressed: () =>
+              bloc.add(DriversListSortByChanged(state.sortBy)),
           icon: Icon(
-            state.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+            state.sortAscending
+                ? Icons.arrow_upward
+                : Icons.arrow_downward,
           ),
           tooltip: state.sortAscending ? 'Ascending' : 'Descending',
         ),
@@ -295,18 +330,39 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileFilterBar(BuildContext context, DriversListState state) {
+  Widget _buildDropdownContainer({
+    required BuildContext context,
+    required Widget child,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildMobileFilterBar(
+    BuildContext context,
+    DriversListState state,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
     final bloc = context.read<DriversListBloc>();
+    
     return Column(
       children: [
-        // Search bar
         TextField(
           onChanged: (val) => bloc.add(DriversListSearchQueryChanged(val)),
           decoration: InputDecoration(
             hintText: 'Search drivers...',
             prefixIcon: const Icon(Icons.search),
             filled: true,
-            fillColor: Colors.grey[100],
+            fillColor: colorScheme.surfaceContainer,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -318,8 +374,6 @@ class DriversListView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Filter and Sort chips
         Row(
           children: [
             Expanded(
@@ -327,7 +381,6 @@ class DriversListView extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    // Filter chips
                     ...bloc.filterOptions.map((filter) {
                       final isSelected = state.selectedFilter == filter;
                       return Padding(
@@ -340,8 +393,9 @@ class DriversListView extends StatelessWidget {
                               bloc.add(DriversListFilterChanged(filter));
                             }
                           },
-                          selectedColor: Colors.blue.withOpacity(0.2),
-                          checkmarkColor: Colors.blue,
+                          selectedColor:
+                              colorScheme.primary.withOpacity(0.2),
+                          checkmarkColor: colorScheme.primary,
                         ),
                       );
                     }),
@@ -349,8 +403,6 @@ class DriversListView extends StatelessWidget {
                 ),
               ),
             ),
-
-            // Sort button
             PopupMenuButton<String>(
               onSelected: (val) => bloc.add(DriversListSortByChanged(val)),
               icon: Row(
@@ -365,22 +417,22 @@ class DriversListView extends StatelessWidget {
                   ),
                 ],
               ),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
+              itemBuilder: (context) => const [
+                PopupMenuItem(
                   value: 'name',
                   child: Text('Sort by Name'),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'email',
                   child: Text('Sort by Email'),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'created_date',
                   child: Text('Sort by Join Date'),
                 ),
-                const PopupMenuItem(
-                  value: 'unique_code',
-                  child: Text('Sort by Code ID'),
+                PopupMenuItem(
+                  value: 'employment_status',
+                  child: Text('Sort by Employment Status'),
                 ),
               ],
             ),
@@ -394,16 +446,14 @@ class DriversListView extends StatelessWidget {
     switch (filter) {
       case 'all':
         return 'All';
-      case 'active':
-        return 'Active';
-      case 'with_bank_details':
-        return 'Bank Details';
-      case 'without_bank_details':
-        return 'No Bank';
-      case 'mpin_set':
-        return 'MPIN Set';
-      case 'mpin_not_set':
-        return 'No MPIN';
+      case 'independent':
+        return 'Independent';
+      case 'employed':
+        return 'Employed';
+      case 'employed_status':
+        return 'Has Status';
+      case 'no_status':
+        return 'No Status';
       default:
         return filter.isNotEmpty
             ? '${filter[0].toUpperCase()}${filter.substring(1)}'
@@ -411,11 +461,14 @@ class DriversListView extends StatelessWidget {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Drivers List — responsive layout
+  // ---------------------------------------------------------------------------
+
   Widget _buildDriversList(BuildContext context, DriversListState state) {
     return RefreshIndicator(
-      onRefresh: () async {
-        context.read<DriversListBloc>().add(DriversListRefreshed());
-      },
+      onRefresh: () async =>
+          context.read<DriversListBloc>().add(DriversListRefreshed()),
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 1200) {
@@ -431,12 +484,14 @@ class DriversListView extends StatelessWidget {
   }
 
   Widget _buildDesktopTable(BuildContext context, DriversListState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return SingleChildScrollView(
       child: Container(
         width: double.infinity,
         margin: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -452,66 +507,70 @@ class DriversListView extends StatelessWidget {
           headingRowHeight: 56,
           dataRowMinHeight: 72,
           dataRowMaxHeight: 72,
-          columns: const [
+          columns: [
             DataColumn(
               label: Text(
                 'Driver',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
             DataColumn(
               label: Text(
                 'Contact',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
             DataColumn(
               label: Text(
-                'Code ID',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                'Employment',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
             DataColumn(
               label: Text(
-                'Status',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                'Type',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
             DataColumn(
               label: Text(
                 'Joined',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
             DataColumn(
               label: Text(
                 'Actions',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
               ),
             ),
           ],
           rows: state.filteredDrivers.map((driver) {
             return DataRow(
               cells: [
+                // Name + ID
                 DataCell(
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 20,
-                        backgroundImage: driver.profilePicture != null
-                            ? NetworkImage(driver.profilePicture!)
-                            : null,
-                        backgroundColor: Colors.blue.withOpacity(0.1),
-                        child: driver.profilePicture == null
-                            ? Text(
-                              (driver.driverName ?? 'N')[0].toUpperCase(),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                              ),
-                            )
-                            : null,
-                      ),
+                      _buildAvatar(driver.name, colorScheme),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -519,17 +578,18 @@ class DriversListView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              driver.driverName ?? 'Unknown',
-                              style: const TextStyle(
+                              driver.name ?? 'Unknown',
+                              style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
+                                color: colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              'ID: ${driver.id}',
+                              'ID: ${driver.id ?? '—'}',
                               style: TextStyle(
-                                color: Colors.grey[600],
+                                color: colorScheme.onSurfaceVariant,
                                 fontSize: 12,
                               ),
                             ),
@@ -539,6 +599,8 @@ class DriversListView extends StatelessWidget {
                     ],
                   ),
                 ),
+
+                // Email + Phone
                 DataCell(
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -546,44 +608,40 @@ class DriversListView extends StatelessWidget {
                     children: [
                       Text(
                         driver.email ?? 'No email',
-                        style: const TextStyle(fontSize: 13),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        driver.phoneNumber ?? 'No phone',
+                        driver.phone ?? 'No phone',
                         style: TextStyle(
-                          color: Colors.grey[600],
+                          color: colorScheme.onSurfaceVariant,
                           fontSize: 12,
                         ),
                       ),
                     ],
                   ),
                 ),
+
+                // Employment status chip
                 DataCell(
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        driver.uniqueCode ?? 'Unknown',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        'ID: ${driver.uniqueCodeId ?? 'N/A'}',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+                  _buildEmploymentStatusChip(driver.employmentStatus),
+                ),
+
+                // Independent / Employed badge
+                DataCell(_buildTypeBadge(driver.isIndependent)),
+
+                // Join date
+                DataCell(
+                  Text(
+                    _formatDate(driver.createdAt),
+                    style: TextStyle(color: colorScheme.onSurface),
                   ),
                 ),
-                DataCell(_buildDriverStatusChips(driver)),
-                DataCell(Text(_formatDate(driver.createdAt))),
+
+                // Actions
                 DataCell(
                   ElevatedButton.icon(
                     onPressed: () => _openDriverDetails(context, driver),
@@ -610,7 +668,7 @@ class DriversListView extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 1.1,
+        childAspectRatio: 1.0,
         crossAxisSpacing: 16,
         mainAxisSpacing: 16,
       ),
@@ -643,87 +701,41 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  void _openDriverDetails(BuildContext context, Driver driver) {
+  void _openDriverDetails(BuildContext context, Item driver) {
     context.push(AppRoutes.driverDetails, extra: driver);
   }
 
-  Widget _buildDriverStatusChips(Driver driver) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        _buildStatusChip(
-          'Bank',
-          driver.hasBankDetails == true,
-          driver.hasBankDetails == true ? Colors.green : Colors.orange,
-        ),
-        _buildStatusChip(
-          'MPIN',
-          driver.mpinSet == true,
-          driver.mpinSet == true ? Colors.blue : Colors.red,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStatusChip(String label, bool isActive, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isActive ? Icons.check_circle : Icons.cancel,
-            size: 10,
-            color: isActive ? color : Colors.grey,
-          ),
-          const SizedBox(width: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: isActive ? color : Colors.grey,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Empty / Error states
+  // ---------------------------------------------------------------------------
 
   Widget _buildErrorState(BuildContext context, DriversListState state) {
-    final bloc = context.read<DriversListBloc>();
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+          Icon(Icons.error_outline, size: 64, color: colorScheme.error),
           const SizedBox(height: 16),
           Text(
             'Failed to load drivers',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             state.errorMessage ?? 'An unexpected error occurred',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => bloc.add(DriversListRefreshed()),
+            onPressed: () =>
+                context.read<DriversListBloc>().add(DriversListRefreshed()),
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
@@ -733,33 +745,38 @@ class DriversListView extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final bloc = context.read<DriversListBloc>();
-
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+          Icon(
+            Icons.people_outline,
+            size: 64,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No drivers found',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filter criteria',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              bloc.add(DriversListSearchQueryChanged(''));
-              bloc.add(DriversListFilterChanged('all'));
+              bloc.add(const DriversListSearchQueryChanged(''));
+              bloc.add(const DriversListFilterChanged('all'));
             },
             icon: const Icon(Icons.clear_all),
             label: const Text('Clear Filters'),
@@ -769,21 +786,103 @@ class DriversListView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Shared helpers
+  // ---------------------------------------------------------------------------
+
+  Widget _buildAvatar(String? name, ColorScheme colorScheme) {
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: colorScheme.primaryContainer,
+      child: Text(
+        (name ?? 'N')[0].toUpperCase(),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmploymentStatusChip(String? status) {
+    final label = status != null
+        ? status[0].toUpperCase() + status.substring(1).toLowerCase()
+        : 'Unknown';
+
+    final Color color;
+    switch (status?.toLowerCase()) {
+      case 'employed':
+      case 'active':
+        color = AppColors.success;
+        break;
+      case 'unemployed':
+      case 'inactive':
+        color = AppColors.error;
+        break;
+      default:
+        color = AppColors.info;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTypeBadge(bool? isIndependent) {
+    final isInd = isIndependent == true;
+    final color = isInd ? AppColors.warning : AppColors.info;
+    final label = isInd ? 'Independent' : 'Employed';
+    final icon =
+        isInd ? Icons.person_outline : Icons.business_center_outlined;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDate(DateTime? date) {
     if (date == null) return 'N/A';
-
     final now = DateTime.now();
     final difference = now.difference(date);
-
-    if (difference.inDays == 0) {
-      return 'Today';
-    } else if (difference.inDays == 1) {
-      return 'Yesterday';
-    } else if (difference.inDays < 30) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 30) return '${difference.inDays}d ago';
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
   }
 }
 
@@ -792,7 +891,7 @@ class DriversListView extends StatelessWidget {
 // =============================================================================
 
 class _DriverCard extends StatelessWidget {
-  final Driver driver;
+  final Item driver;
   final VoidCallback onTap;
   final bool isMobile;
 
@@ -804,6 +903,9 @@ class _DriverCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isIndependent = driver.isIndependent == true;
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -815,25 +917,20 @@ class _DriverCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with avatar and basic info
+              // Avatar + name + status indicator
               Row(
                 children: [
                   CircleAvatar(
                     radius: isMobile ? 24 : 20,
-                    backgroundImage: driver.profilePicture != null
-                        ? NetworkImage(driver.profilePicture!)
-                        : null,
-                    backgroundColor: Colors.blue.withOpacity(0.1),
-                    child: driver.profilePicture == null
-                        ? Text(
-                          (driver.driverName ?? 'N')[0].toUpperCase(),
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                            fontSize: isMobile ? 18 : 16,
-                          ),
-                        )
-                        : null,
+                    backgroundColor: colorScheme.primaryContainer,
+                    child: Text(
+                      (driver.name ?? 'N')[0].toUpperCase(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.primary,
+                        fontSize: isMobile ? 18 : 16,
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -841,102 +938,102 @@ class _DriverCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          driver.driverName ?? 'Unknown Driver',
+                          driver.name ?? 'Unknown Driver',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: isMobile ? 16 : 14,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'ID: ${driver.id}',
+                          'ID: ${driver.id ?? '—'}',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: 12,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Compact Status indicator
+                  // Independent / employed indicator
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color: (driver.hasBankDetails == true &&
-                              driver.mpinSet == true)
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.orange.withOpacity(0.1),
+                      color: isIndependent
+                          ? AppColors.warning.withOpacity(0.1)
+                          : AppColors.info.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
-                      (driver.hasBankDetails == true && driver.mpinSet == true)
-                          ? Icons.check
-                          : Icons.warning_amber_rounded,
+                      isIndependent
+                          ? Icons.person_outline
+                          : Icons.business_center_outlined,
                       size: 16,
-                      color: (driver.hasBankDetails == true &&
-                              driver.mpinSet == true)
-                          ? Colors.green
-                          : Colors.orange,
+                      color: isIndependent ? AppColors.warning : AppColors.info,
                     ),
                   ),
                 ],
               ),
 
               const SizedBox(height: 16),
-              const Divider(height: 1),
+              Divider(color: colorScheme.outlineVariant, height: 1),
               const SizedBox(height: 16),
 
-              // Contact Info
+              // Contact info
               _buildInfoRow(
                 icon: Icons.email_outlined,
                 text: driver.email ?? 'No email',
-                color: Colors.grey[700]!,
+                colorScheme: colorScheme,
               ),
               const SizedBox(height: 8),
               _buildInfoRow(
                 icon: Icons.phone_outlined,
-                text: driver.phoneNumber ?? 'No phone',
-                color: Colors.grey[700]!,
+                text: driver.phone ?? 'No phone',
+                colorScheme: colorScheme,
               ),
-              const SizedBox(height: 8),
-              _buildInfoRow(
-                icon: Icons.qr_code,
-                text:
-                    '${driver.uniqueCode} (${driver.uniqueCodeId ?? 'N/A'})',
-                color: Colors.grey[700]!,
-              ),
+              if (driver.createdAt != null) ...[
+                const SizedBox(height: 8),
+                _buildInfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  text: 'Joined: ${_formatDate(driver.createdAt)}',
+                  colorScheme: colorScheme,
+                ),
+              ],
 
               const Spacer(),
 
-              // Status Chips List
+              // Status chips
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
                   _buildCardStatusChip(
-                    'Bank Details',
-                    driver.hasBankDetails == true,
-                    Colors.green,
+                    isIndependent ? 'Independent' : 'Employed',
+                    isIndependent ? AppColors.warning : AppColors.info,
                   ),
-                  _buildCardStatusChip(
-                    'MPIN',
-                    driver.mpinSet == true,
-                    Colors.blue,
-                  ),
+                  if (driver.employmentStatus != null)
+                    _buildCardStatusChip(
+                      driver.employmentStatus![0].toUpperCase() +
+                          driver.employmentStatus!.substring(1).toLowerCase(),
+                      AppColors.success,
+                    ),
                 ],
               ),
 
               const SizedBox(height: 16),
 
-              // View Details Button (Full Width)
+              // View Details button
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: onTap,
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.blue.withOpacity(0.5)),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -954,16 +1051,19 @@ class _DriverCard extends StatelessWidget {
   Widget _buildInfoRow({
     required IconData icon,
     required String text,
-    required Color color,
+    required ColorScheme colorScheme,
   }) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.grey[500]),
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: color, fontSize: 13),
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 13,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -972,28 +1072,22 @@ class _DriverCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardStatusChip(String label, bool isActive, Color activeColor) {
+  Widget _buildCardStatusChip(String label, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive
-            ? activeColor.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            isActive ? Icons.check_circle : Icons.cancel,
-            size: 12,
-            color: isActive ? activeColor : Colors.grey,
-          ),
+          Icon(Icons.circle, size: 8, color: color),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              color: isActive ? activeColor : Colors.grey,
+              color: color,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -1001,5 +1095,17 @@ class _DriverCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) return 'N/A';
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    if (difference.inDays == 0) return 'Today';
+    if (difference.inDays == 1) return 'Yesterday';
+    if (difference.inDays < 30) return '${difference.inDays}d ago';
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
   }
 }

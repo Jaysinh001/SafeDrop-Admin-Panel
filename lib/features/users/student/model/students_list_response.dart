@@ -9,107 +9,195 @@ StudentsListResponse studentsListResponseFromJson(String str) => StudentsListRes
 String studentsListResponseToJson(StudentsListResponse data) => json.encode(data.toJson());
 
 class StudentsListResponse {
+    final String? code;
+    final Data? data;
     final String? message;
-    final List<Student>? students;
     final bool? success;
 
     StudentsListResponse({
+        this.code,
+        this.data,
         this.message,
-        this.students,
         this.success,
     });
 
     StudentsListResponse copyWith({
+        String? code,
+        Data? data,
         String? message,
-        List<Student>? students,
         bool? success,
     }) => 
         StudentsListResponse(
+            code: code ?? this.code,
+            data: data ?? this.data,
             message: message ?? this.message,
-            students: students ?? this.students,
             success: success ?? this.success,
         );
 
     factory StudentsListResponse.fromJson(Map<String, dynamic> json) => StudentsListResponse(
+        code: json["code"],
+        data: json["data"] == null ? null : Data.fromJson(json["data"]),
         message: json["message"],
-        students: json["students"] == null ? [] : List<Student>.from(json["students"]!.map((x) => Student.fromJson(x))),
         success: json["success"],
     );
 
     Map<String, dynamic> toJson() => {
+        "code": code,
+        "data": data?.toJson(),
         "message": message,
-        "students": students == null ? [] : List<dynamic>.from(students!.map((x) => x.toJson())),
         "success": success,
     };
 }
 
-class Student {
-    final int? studentId;
-    final String? phoneNumber;
-    final String? email;
-    final String? studentName;
-    final int? proposedFee;
-    final bool? accountActive;
-    final int? driverId;
-    final String? driverName;
-    final String? driverCode;
+class Data {
+    final List<Item>? items;
+    final Pagination? pagination;
 
-    Student({
-        this.studentId,
-        this.phoneNumber,
-        this.email,
-        this.studentName,
-        this.proposedFee,
-        this.accountActive,
-        this.driverId,
-        this.driverName,
-        this.driverCode,
+    Data({
+        this.items,
+        this.pagination,
     });
 
-    Student copyWith({
-        int? studentId,
-        String? phoneNumber,
-        String? email,
-        String? studentName,
-        int? proposedFee,
-        bool? accountActive,
-        int? driverId,
-        String? driverName,
-        String? driverCode,
+    Data copyWith({
+        List<Item>? items,
+        Pagination? pagination,
     }) => 
-        Student(
-            studentId: studentId ?? this.studentId,
-            phoneNumber: phoneNumber ?? this.phoneNumber,
-            email: email ?? this.email,
-            studentName: studentName ?? this.studentName,
-            proposedFee: proposedFee ?? this.proposedFee,
-            accountActive: accountActive ?? this.accountActive,
-            driverId: driverId ?? this.driverId,
-            driverName: driverName ?? this.driverName,
-            driverCode: driverCode ?? this.driverCode,
+        Data(
+            items: items ?? this.items,
+            pagination: pagination ?? this.pagination,
         );
 
-    factory Student.fromJson(Map<String, dynamic> json) => Student(
-        studentId: json["student_id"],
-        phoneNumber: json["phone_number"],
-        email: json["email"],
-        studentName: json["student_name"],
-        proposedFee: json["proposed_fee"],
-        accountActive: json["account_active"],
-        driverId: json["driver_id"],
-        driverName: json["driver_name"],
-        driverCode: json["driver_code"],
+    factory Data.fromJson(Map<String, dynamic> json) => Data(
+        items: json["items"] == null ? [] : List<Item>.from(json["items"]!.map((x) => Item.fromJson(x))),
+        pagination: json["pagination"] == null ? null : Pagination.fromJson(json["pagination"]),
     );
 
     Map<String, dynamic> toJson() => {
-        "student_id": studentId,
-        "phone_number": phoneNumber,
+        "items": items == null ? [] : List<dynamic>.from(items!.map((x) => x.toJson())),
+        "pagination": pagination?.toJson(),
+    };
+}
+
+class Item {
+    final int? id;
+    final int? userId;
+    final String? name;
+    final String? email;
+    final String? phone;
+    final String? enrollmentStatus;
+    final DateTime? admissionDate;
+    final DateTime? createdAt;
+    final DateTime? updatedAt;
+
+    Item({
+        this.id,
+        this.userId,
+        this.name,
+        this.email,
+        this.phone,
+        this.enrollmentStatus,
+        this.admissionDate,
+        this.createdAt,
+        this.updatedAt,
+    });
+
+    Item copyWith({
+        int? id,
+        int? userId,
+        String? name,
+        String? email,
+        String? phone,
+        String? enrollmentStatus,
+        DateTime? admissionDate,
+        DateTime? createdAt,
+        DateTime? updatedAt,
+    }) => 
+        Item(
+            id: id ?? this.id,
+            userId: userId ?? this.userId,
+            name: name ?? this.name,
+            email: email ?? this.email,
+            phone: phone ?? this.phone,
+            enrollmentStatus: enrollmentStatus ?? this.enrollmentStatus,
+            admissionDate: admissionDate ?? this.admissionDate,
+            createdAt: createdAt ?? this.createdAt,
+            updatedAt: updatedAt ?? this.updatedAt,
+        );
+
+    factory Item.fromJson(Map<String, dynamic> json) => Item(
+        id: json["id"],
+        userId: json["user_id"],
+        name: json["name"],
+        email: json["email"],
+        phone: json["phone"],
+        enrollmentStatus: json["enrollment_status"],
+        admissionDate: json["admission_date"] == null ? null : DateTime.parse(json["admission_date"]),
+        createdAt: json["created_at"] == null ? null : DateTime.parse(json["created_at"]),
+        updatedAt: json["updated_at"] == null ? null : DateTime.parse(json["updated_at"]),
+    );
+
+    Map<String, dynamic> toJson() => {
+        "id": id,
+        "user_id": userId,
+        "name": name,
         "email": email,
-        "student_name": studentName,
-        "proposed_fee": proposedFee,
-        "account_active": accountActive,
-        "driver_id": driverId,
-        "driver_name": driverName,
-        "driver_code": driverCode,
+        "phone": phone,
+        "enrollment_status": enrollmentStatus,
+        "admission_date": admissionDate?.toIso8601String(),
+        "created_at": createdAt?.toIso8601String(),
+        "updated_at": updatedAt?.toIso8601String(),
+    };
+}
+
+class Pagination {
+    final int? page;
+    final int? limit;
+    final int? totalItems;
+    final int? totalPages;
+    final bool? hasNext;
+    final bool? hasPrev;
+
+    Pagination({
+        this.page,
+        this.limit,
+        this.totalItems,
+        this.totalPages,
+        this.hasNext,
+        this.hasPrev,
+    });
+
+    Pagination copyWith({
+        int? page,
+        int? limit,
+        int? totalItems,
+        int? totalPages,
+        bool? hasNext,
+        bool? hasPrev,
+    }) => 
+        Pagination(
+            page: page ?? this.page,
+            limit: limit ?? this.limit,
+            totalItems: totalItems ?? this.totalItems,
+            totalPages: totalPages ?? this.totalPages,
+            hasNext: hasNext ?? this.hasNext,
+            hasPrev: hasPrev ?? this.hasPrev,
+        );
+
+    factory Pagination.fromJson(Map<String, dynamic> json) => Pagination(
+        page: json["page"],
+        limit: json["limit"],
+        totalItems: json["total_items"],
+        totalPages: json["total_pages"],
+        hasNext: json["has_next"],
+        hasPrev: json["has_prev"],
+    );
+
+    Map<String, dynamic> toJson() => {
+        "page": page,
+        "limit": limit,
+        "total_items": totalItems,
+        "total_pages": totalPages,
+        "has_next": hasNext,
+        "has_prev": hasPrev,
     };
 }

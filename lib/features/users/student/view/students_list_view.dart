@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
+import '../../../../core/theme/colors.dart';
 import '../bloc/student_list_bloc/students_list_bloc.dart';
 import '../bloc/student_list_bloc/students_list_event.dart';
 import '../bloc/student_list_bloc/students_list_state.dart';
@@ -10,11 +11,11 @@ import '../model/students_list_response.dart';
 class StudentsListView extends StatelessWidget {
   const StudentsListView({super.key});
 
-  void _openStudentDetails(BuildContext context, Student student) {
+  void _openStudentDetails(BuildContext context, Item student) {
     // context.push(AppRoutes.studentDetails, extra: student);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Opening details for ${student.studentName}'),
+        content: Text('Opening details for ${student.name}'),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -22,10 +23,13 @@ class StudentsListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocProvider(
-      create: (context) => sl<StudentsListBloc>()..add(StudentsListLoaded()),
+      create: (context) =>
+          sl<StudentsListBloc>()..add(StudentsListLoaded()),
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
+        backgroundColor: colorScheme.surface,
         body: Column(
           children: [
             _buildHeader(context),
@@ -34,13 +38,14 @@ class StudentsListView extends StatelessWidget {
               child: BlocBuilder<StudentsListBloc, StudentsListState>(
                 builder: (context, state) {
                   if (state.status == StudentsListStatus.loading) {
-                    return const LoadingView(title: "Loading students...");
+                    return const LoadingView(title: 'Loading students...');
                   }
-
+                  if (state.status == StudentsListStatus.error) {
+                    return _buildErrorState(context, state.errorMessage);
+                  }
                   if (state.filteredStudents.isEmpty) {
                     return _buildEmptyState(context);
                   }
-
                   return _buildStudentsList(context);
                 },
               ),
@@ -50,10 +55,9 @@ class StudentsListView extends StatelessWidget {
         floatingActionButton: BlocBuilder<StudentsListBloc, StudentsListState>(
           builder: (context, state) {
             return FloatingActionButton(
-              onPressed:
-                  () => context.read<StudentsListBloc>().add(
-                    StudentsListRefreshRequested(),
-                  ),
+              onPressed: () => context
+                  .read<StudentsListBloc>()
+                  .add(StudentsListRefreshRequested()),
               tooltip: 'Refresh',
               child: const Icon(Icons.refresh),
             );
@@ -63,13 +67,24 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Header
+  // ---------------------------------------------------------------------------
+
   Widget _buildHeader(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: EdgeInsets.all(width > 768 ? 24 : 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
+        ),
       ),
       child: Row(
         children: [
@@ -81,7 +96,7 @@ class StudentsListView extends StatelessWidget {
                   'Students Management',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -89,44 +104,45 @@ class StudentsListView extends StatelessWidget {
                   builder: (context, state) {
                     return Text(
                       '${state.filteredStudents.length} students found',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     );
                   },
                 ),
               ],
             ),
           ),
-          if (width > 768) _buildQuickStats(),
+          if (width > 768) _buildQuickStats(context),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStats() {
+  Widget _buildQuickStats(BuildContext context) {
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return Row(
           children: [
-            _buildStatChip('Total', state.totalStudents, Colors.blue),
+            _buildStatChip(context, 'Total', state.totalStudents, AppColors.primary),
             const SizedBox(width: 8),
-            _buildStatChip('Active', state.activeStudents, Colors.green),
+            _buildStatChip(context, 'Active', state.activeStudents, AppColors.success),
             const SizedBox(width: 8),
-            _buildStatChip('Assigned', state.assignedStudents, Colors.purple),
+            _buildStatChip(context, 'Inactive', state.inactiveStudents, AppColors.error),
             const SizedBox(width: 8),
-            _buildStatChip(
-              'Unassigned',
-              state.unassignedStudents,
-              Colors.orange,
-            ),
+            _buildStatChip(context, 'Enrolled', state.enrolledStudents, AppColors.info),
           ],
         );
       },
     );
   }
 
-  Widget _buildStatChip(String label, int count, Color color) {
+  Widget _buildStatChip(
+    BuildContext context,
+    String label,
+    int count,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -156,39 +172,54 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Filter & Search Bar
+  // ---------------------------------------------------------------------------
+
   Widget _buildFilterAndSearch(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: width > 768 ? 24 : 16,
         vertical: 16,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
+        ),
       ),
-      child: width > 768 ? _buildDesktopFilterBar() : _buildMobileFilterBar(),
+      child: width > 768
+          ? _buildDesktopFilterBar(context)
+          : _buildMobileFilterBar(context),
     );
   }
 
-  Widget _buildDesktopFilterBar() {
+  Widget _buildDesktopFilterBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return Row(
           children: [
-            // Search bar
+            // Search
             Expanded(
               flex: 2,
               child: TextField(
-                onChanged:
-                    (value) => context.read<StudentsListBloc>().add(
-                      StudentsListSearchQueryChanged(value),
-                    ),
+                onChanged: (value) => context
+                    .read<StudentsListBloc>()
+                    .add(StudentsListSearchQueryChanged(value)),
                 decoration: InputDecoration(
-                  hintText: 'Search by name, email, phone, ID, or driver...',
+                  hintText:
+                      'Search by name, email, phone, ID, or enrollment status...',
                   prefixIcon: const Icon(Icons.search),
                   filled: true,
-                  fillColor: Colors.grey[100],
+                  fillColor: colorScheme.surfaceContainer,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -203,17 +234,11 @@ class StudentsListView extends StatelessWidget {
             const SizedBox(width: 16),
 
             // Filter dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
+            _buildDropdownContainer(
+              context: context,
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: state.selectedFilter,
-                  hint: const Text('Filter'),
                   items: const [
                     DropdownMenuItem(value: 'all', child: Text('All Students')),
                     DropdownMenuItem(value: 'active', child: Text('Active')),
@@ -222,69 +247,65 @@ class StudentsListView extends StatelessWidget {
                       child: Text('Inactive'),
                     ),
                     DropdownMenuItem(
-                      value: 'assigned',
-                      child: Text('Assigned to Driver'),
+                      value: 'enrolled',
+                      child: Text('Enrolled'),
                     ),
                     DropdownMenuItem(
-                      value: 'unassigned',
-                      child: Text('Unassigned'),
+                      value: 'unenrolled',
+                      child: Text('Unenrolled'),
                     ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
-                      context.read<StudentsListBloc>().add(
-                        StudentsListFilterChanged(value),
-                      );
+                      context
+                          .read<StudentsListBloc>()
+                          .add(StudentsListFilterChanged(value));
                     }
                   },
                 ),
               ),
             ),
-
             const SizedBox(width: 16),
 
             // Sort dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
-              ),
+            _buildDropdownContainer(
+              context: context,
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: state.sortBy,
-                  hint: const Text('Sort'),
                   items: const [
                     DropdownMenuItem(value: 'name', child: Text('Name')),
-                    DropdownMenuItem(value: 'fee', child: Text('Fee')),
+                    DropdownMenuItem(value: 'id', child: Text('ID')),
                     DropdownMenuItem(
-                      value: 'student_id',
-                      child: Text('Student ID'),
+                      value: 'admission_date',
+                      child: Text('Admission Date'),
                     ),
-                    DropdownMenuItem(value: 'driver', child: Text('Driver')),
+                    DropdownMenuItem(
+                      value: 'enrollment_status',
+                      child: Text('Enrollment Status'),
+                    ),
                   ],
                   onChanged: (value) {
                     if (value != null) {
-                      context.read<StudentsListBloc>().add(
-                        StudentsListSortChanged(value),
-                      );
+                      context
+                          .read<StudentsListBloc>()
+                          .add(StudentsListSortChanged(value));
                     }
                   },
                 ),
               ),
             ),
-
             const SizedBox(width: 8),
 
-            // Sort direction
+            // Sort direction toggle
             IconButton(
-              onPressed:
-                  () => context.read<StudentsListBloc>().add(
-                    StudentsListSortChanged(state.sortBy),
-                  ),
+              onPressed: () => context
+                  .read<StudentsListBloc>()
+                  .add(StudentsListSortChanged(state.sortBy)),
               icon: Icon(
-                state.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                state.sortAscending
+                    ? Icons.arrow_upward
+                    : Icons.arrow_downward,
               ),
               tooltip: state.sortAscending ? 'Ascending' : 'Descending',
             ),
@@ -294,22 +315,39 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileFilterBar() {
+  Widget _buildDropdownContainer({
+    required BuildContext context,
+    required Widget child,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _buildMobileFilterBar(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return Column(
           children: [
-            // Search bar
             TextField(
-              onChanged:
-                  (value) => context.read<StudentsListBloc>().add(
-                    StudentsListSearchQueryChanged(value),
-                  ),
+              onChanged: (value) => context
+                  .read<StudentsListBloc>()
+                  .add(StudentsListSearchQueryChanged(value)),
               decoration: InputDecoration(
                 hintText: 'Search students...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: Colors.grey[100],
+                fillColor: colorScheme.surfaceContainer,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
@@ -321,8 +359,6 @@ class StudentsListView extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 12),
-
-            // Filter and Sort chips
             Row(
               children: [
                 Expanded(
@@ -330,14 +366,8 @@ class StudentsListView extends StatelessWidget {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
-                        // Filter chips
-                        ...[
-                          'all',
-                          'active',
-                          'inactive',
-                          'assigned',
-                          'unassigned',
-                        ].map((filter) {
+                        ...['all', 'active', 'inactive', 'enrolled', 'unenrolled']
+                            .map((filter) {
                           final isSelected = state.selectedFilter == filter;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
@@ -351,8 +381,8 @@ class StudentsListView extends StatelessWidget {
                                   );
                                 }
                               },
-                              selectedColor: Colors.blue.withOpacity(0.2),
-                              checkmarkColor: Colors.blue,
+                              selectedColor: colorScheme.primary.withOpacity(0.2),
+                              checkmarkColor: colorScheme.primary,
                             ),
                           );
                         }),
@@ -360,13 +390,10 @@ class StudentsListView extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // Sort button
                 PopupMenuButton<String>(
-                  onSelected:
-                      (value) => context.read<StudentsListBloc>().add(
-                        StudentsListSortChanged(value),
-                      ),
+                  onSelected: (value) => context
+                      .read<StudentsListBloc>()
+                      .add(StudentsListSortChanged(value)),
                   icon: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -379,22 +406,18 @@ class StudentsListView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  itemBuilder:
-                      (context) => const [
-                        PopupMenuItem(
-                          value: 'name',
-                          child: Text('Sort by Name'),
-                        ),
-                        PopupMenuItem(value: 'fee', child: Text('Sort by Fee')),
-                        PopupMenuItem(
-                          value: 'student_id',
-                          child: Text('Sort by ID'),
-                        ),
-                        PopupMenuItem(
-                          value: 'driver',
-                          child: Text('Sort by Driver'),
-                        ),
-                      ],
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'name', child: Text('Sort by Name')),
+                    PopupMenuItem(value: 'id', child: Text('Sort by ID')),
+                    PopupMenuItem(
+                      value: 'admission_date',
+                      child: Text('Sort by Admission Date'),
+                    ),
+                    PopupMenuItem(
+                      value: 'enrollment_status',
+                      child: Text('Sort by Enrollment Status'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -412,37 +435,41 @@ class StudentsListView extends StatelessWidget {
         return 'Active';
       case 'inactive':
         return 'Inactive';
-      case 'assigned':
-        return 'Assigned';
-      case 'unassigned':
-        return 'Unassigned';
+      case 'enrolled':
+        return 'Enrolled';
+      case 'unenrolled':
+        return 'Unenrolled';
       default:
         if (filter.isEmpty) return '';
         return filter[0].toUpperCase() + filter.substring(1).toLowerCase();
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Students List — responsive layout
+  // ---------------------------------------------------------------------------
+
   Widget _buildStudentsList(BuildContext context) {
     return RefreshIndicator(
-      onRefresh:
-          () async => context.read<StudentsListBloc>().add(
-            StudentsListRefreshRequested(),
-          ),
+      onRefresh: () async =>
+          context.read<StudentsListBloc>().add(StudentsListRefreshRequested()),
       child: LayoutBuilder(
         builder: (context, constraints) {
           if (constraints.maxWidth > 1200) {
-            return _buildDesktopTable();
+            return _buildDesktopTable(context);
           } else if (constraints.maxWidth > 768) {
-            return _buildTabletGrid();
+            return _buildTabletGrid(context);
           } else {
-            return _buildMobileList();
+            return _buildMobileList(context);
           }
         },
       ),
     );
   }
 
-  Widget _buildDesktopTable() {
+  Widget _buildDesktopTable(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return SingleChildScrollView(
@@ -450,7 +477,7 @@ class StudentsListView extends StatelessWidget {
             width: double.infinity,
             margin: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
@@ -466,165 +493,158 @@ class StudentsListView extends StatelessWidget {
               headingRowHeight: 56,
               dataRowMinHeight: 72,
               dataRowMaxHeight: 72,
-              columns: const [
+              columns: [
                 DataColumn(
                   label: Text(
                     'Student',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Contact',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 DataColumn(
                   label: Text(
-                    'Fee',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    'Phone',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 DataColumn(
                   label: Text(
-                    'Driver',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    'Admission Date',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Status',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
                 DataColumn(
                   label: Text(
                     'Actions',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
                   ),
                 ),
               ],
-              rows:
-                  state.filteredStudents.map((student) {
-                    return DataRow(
-                      cells: [
-                        DataCell(
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: Colors.blue.withOpacity(0.1),
-                                child: Text(
-                                  (student.studentName ?? 'N')[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+              rows: state.filteredStudents.map((student) {
+                return DataRow(
+                  cells: [
+                    // Student name + ID
+                    DataCell(
+                      Row(
+                        children: [
+                          _buildAvatar(student.name, colorScheme),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  student.name ?? 'Unknown',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'ID: ${student.id ?? '—'}',
+                                  style: TextStyle(
+                                    color: colorScheme.onSurfaceVariant,
+                                    fontSize: 12,
                                   ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      student.studentName ?? 'Unknown',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 14,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    Text(
-                                      'ID: ${student.studentId}',
-                                      style: TextStyle(
-                                        color: Colors.grey[600],
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        DataCell(
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                student.email ?? 'No email',
-                                style: const TextStyle(fontSize: 13),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              Text(
-                                student.phoneNumber ?? 'No phone',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            '₹${student.proposedFee ?? 0}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                              ],
                             ),
                           ),
+                        ],
+                      ),
+                    ),
+
+                    // Email
+                    DataCell(
+                      Text(
+                        student.email ?? 'No email',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface,
                         ),
-                        DataCell(
-                          student.driverId != null
-                              ? Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    student.driverName ?? 'Unknown',
-                                    style: const TextStyle(fontSize: 13),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  Text(
-                                    student.driverCode ?? 'N/A',
-                                    style: TextStyle(
-                                      color: Colors.grey[600],
-                                      fontSize: 11,
-                                      fontFamily: 'monospace',
-                                    ),
-                                  ),
-                                ],
-                              )
-                              : Text(
-                                'Unassigned',
-                                style: TextStyle(
-                                  color: Colors.grey[500],
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+
+                    // Phone
+                    DataCell(
+                      Text(
+                        student.phone ?? 'No phone',
+                        style: TextStyle(
+                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 13,
                         ),
-                        DataCell(_buildStudentStatusChips(student)),
-                        DataCell(
-                          ElevatedButton.icon(
-                            onPressed:
-                                () => _openStudentDetails(context, student),
-                            icon: const Icon(Icons.visibility, size: 16),
-                            label: const Text('View'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                            ),
+                      ),
+                    ),
+
+                    // Admission date
+                    DataCell(
+                      Text(
+                        student.admissionDate != null
+                            ? _formatDate(student.admissionDate!)
+                            : '—',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+
+                    // Enrollment status chip
+                    DataCell(
+                      _buildEnrollmentStatusChip(student.enrollmentStatus),
+                    ),
+
+                    // Actions
+                    DataCell(
+                      ElevatedButton.icon(
+                        onPressed: () =>
+                            _openStudentDetails(context, student),
+                        icon: const Icon(Icons.visibility, size: 16),
+                        label: const Text('View'),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
                         ),
-                      ],
-                    );
-                  }).toList(),
+                      ),
+                    ),
+                  ],
+                );
+              }).toList(),
             ),
           ),
         );
@@ -632,14 +652,14 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
-  Widget _buildTabletGrid() {
+  Widget _buildTabletGrid(BuildContext context) {
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return GridView.builder(
           padding: const EdgeInsets.all(16),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 1.1,
+            childAspectRatio: 1.0,
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
@@ -656,7 +676,7 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileList() {
+  Widget _buildMobileList(BuildContext context) {
     return BlocBuilder<StudentsListBloc, StudentsListState>(
       builder: (context, state) {
         return ListView.builder(
@@ -678,85 +698,46 @@ class StudentsListView extends StatelessWidget {
     );
   }
 
-  Widget _buildStudentStatusChips(Student student) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: [
-        _buildStatusChip(
-          student.accountActive == true ? 'Active' : 'Inactive',
-          student.accountActive == true,
-          student.accountActive == true ? Colors.green : Colors.red,
-        ),
-        if (student.driverId != null)
-          _buildStatusChip('Assigned', true, Colors.purple),
-      ],
-    );
-  }
-
-  Widget _buildStatusChip(String label, bool isActive, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            isActive ? Icons.check_circle : Icons.cancel,
-            size: 10,
-            color: isActive ? color : Colors.grey,
-          ),
-          const SizedBox(width: 2),
-          Text(
-            label,
-            style: TextStyle(
-              color: isActive ? color : Colors.grey,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // ---------------------------------------------------------------------------
+  // Empty / Error States
+  // ---------------------------------------------------------------------------
 
   Widget _buildEmptyState(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.school_outlined, size: 64, color: Colors.grey[400]),
+          Icon(
+            Icons.school_outlined,
+            size: 64,
+            color: colorScheme.onSurfaceVariant,
+          ),
           const SizedBox(height: 16),
           Text(
             'No students found',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(color: Colors.grey[600]),
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filter criteria',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              context.read<StudentsListBloc>().add(
-                const StudentsListSearchQueryChanged(''),
-              );
-              context.read<StudentsListBloc>().add(
-                const StudentsListFilterChanged('all'),
-              );
+              context
+                  .read<StudentsListBloc>()
+                  .add(const StudentsListSearchQueryChanged(''));
+              context
+                  .read<StudentsListBloc>()
+                  .add(const StudentsListFilterChanged('all'));
             },
             icon: const Icon(Icons.clear_all),
             label: const Text('Clear Filters'),
@@ -765,6 +746,108 @@ class StudentsListView extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildErrorState(BuildContext context, String? message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Something went wrong',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: colorScheme.onSurface,
+            ),
+          ),
+          if (message != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              message,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => context
+                .read<StudentsListBloc>()
+                .add(StudentsListRefreshRequested()),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Shared helpers
+  // ---------------------------------------------------------------------------
+
+  Widget _buildAvatar(String? name, ColorScheme colorScheme) {
+    return CircleAvatar(
+      radius: 20,
+      backgroundColor: colorScheme.primaryContainer,
+      child: Text(
+        (name ?? 'N')[0].toUpperCase(),
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnrollmentStatusChip(String? status) {
+    final label = status != null
+        ? status[0].toUpperCase() + status.substring(1).toLowerCase()
+        : 'Unknown';
+
+    final Color color;
+    switch (status?.toLowerCase()) {
+      case 'active':
+      case 'enrolled':
+        color = AppColors.success;
+        break;
+      case 'inactive':
+        color = AppColors.error;
+        break;
+      default:
+        color = AppColors.info;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
+  }
 }
 
 // =============================================================================
@@ -772,7 +855,7 @@ class StudentsListView extends StatelessWidget {
 // =============================================================================
 
 class _StudentCard extends StatelessWidget {
-  final Student student;
+  final Item student;
   final VoidCallback onTap;
   final bool isMobile;
 
@@ -784,6 +867,8 @@ class _StudentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -795,17 +880,17 @@ class _StudentCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with avatar and basic info
+              // Avatar + name + ID row
               Row(
                 children: [
                   CircleAvatar(
                     radius: isMobile ? 24 : 20,
-                    backgroundColor: Colors.blue.withOpacity(0.1),
+                    backgroundColor: colorScheme.primaryContainer,
                     child: Text(
-                      (student.studentName ?? 'N')[0].toUpperCase(),
+                      (student.name ?? 'N')[0].toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                        color: colorScheme.primary,
                         fontSize: isMobile ? 18 : 16,
                       ),
                     ),
@@ -816,19 +901,20 @@ class _StudentCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          student.studentName ?? 'Unknown Student',
+                          student.name ?? 'Unknown Student',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: isMobile ? 16 : 14,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'ID: ${student.studentId}',
+                          'ID: ${student.id ?? '—'}',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: colorScheme.onSurfaceVariant,
                             fontSize: isMobile ? 12 : 11,
                           ),
                         ),
@@ -838,187 +924,50 @@ class _StudentCard extends StatelessWidget {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: Colors.grey[400],
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
 
               const SizedBox(height: 12),
 
-              // Contact information
+              // Email
               if (student.email != null) ...[
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        student.email!,
-                        style: TextStyle(
-                          fontSize: isMobile ? 13 : 12,
-                          color: Colors.grey[700],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                _buildInfoRow(
+                  icon: Icons.email_outlined,
+                  text: student.email!,
+                  isMobile: isMobile,
+                  colorScheme: colorScheme,
                 ),
                 const SizedBox(height: 6),
               ],
 
-              if (student.phoneNumber != null) ...[
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone_outlined,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      student.phoneNumber!,
-                      style: TextStyle(
-                        fontSize: isMobile ? 13 : 12,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ],
+              // Phone
+              if (student.phone != null) ...[
+                _buildInfoRow(
+                  icon: Icons.phone_outlined,
+                  text: student.phone!,
+                  isMobile: isMobile,
+                  colorScheme: colorScheme,
                 ),
                 const SizedBox(height: 8),
-              ] else
-                const SizedBox(height: 2),
-
-              // Fee display
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.green.withOpacity(0.3)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.currency_rupee,
-                      size: 16,
-                      color: Colors.green,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Proposed Fee: ₹${student.proposedFee ?? 0}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
-                        color: Colors.green,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // Driver assignment info
-              if (student.driverId != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.purple.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.purple.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.person, size: 16, color: Colors.purple),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Assigned Driver',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              student.driverName ?? 'Unknown',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 13,
-                                color: Colors.purple,
-                              ),
-                            ),
-                            Text(
-                              'Code: ${student.driverCode ?? 'N/A'}',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[600],
-                                fontFamily: 'monospace',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ] else ...[
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber,
-                        size: 16,
-                        color: Colors.orange,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'No driver assigned',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange[700],
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 12),
               ],
 
-              // Status chips
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  _buildStatusChip(
-                    student.accountActive == true ? 'Active' : 'Inactive',
-                    student.accountActive == true,
-                    student.accountActive == true ? Colors.green : Colors.red,
-                  ),
-                  if (student.driverId != null)
-                    _buildStatusChip('Assigned', true, Colors.purple),
-                ],
-              ),
+              // Admission date
+              if (student.admissionDate != null) ...[
+                _buildInfoRow(
+                  icon: Icons.calendar_today_outlined,
+                  text: 'Admitted: ${_formatDate(student.admissionDate!)}',
+                  isMobile: isMobile,
+                  colorScheme: colorScheme,
+                ),
+                const SizedBox(height: 8),
+              ],
+
+              const Spacer(),
+
+              // Enrollment status chip
+              _buildEnrollmentStatusChip(student.enrollmentStatus),
             ],
           ),
         ),
@@ -1026,30 +975,69 @@ class _StudentCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(String label, bool isActive, Color color) {
+  Widget _buildInfoRow({
+    required IconData icon,
+    required String text,
+    required bool isMobile,
+    required ColorScheme colorScheme,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: isMobile ? 13 : 12,
+              color: colorScheme.onSurface,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildEnrollmentStatusChip(String? status) {
+    final label = status != null
+        ? status[0].toUpperCase() + status.substring(1).toLowerCase()
+        : 'Unknown';
+
+    final Color color;
+    switch (status?.toLowerCase()) {
+      case 'active':
+      case 'enrolled':
+        color = AppColors.success;
+        break;
+      case 'inactive':
+        color = AppColors.error;
+        break;
+      default:
+        color = AppColors.info;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isActive ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
-        ),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isActive ? Icons.check_circle : Icons.cancel,
-            size: 12,
-            color: isActive ? color : Colors.grey,
+            color == AppColors.info ? Icons.help_outline : Icons.circle,
+            size: 8,
+            color: color,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              color: isActive ? color : Colors.grey,
+              color: color,
               fontSize: 11,
               fontWeight: FontWeight.w600,
             ),
@@ -1057,5 +1045,11 @@ class _StudentCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/'
+        '${date.month.toString().padLeft(2, '0')}/'
+        '${date.year}';
   }
 }

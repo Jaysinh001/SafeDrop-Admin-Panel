@@ -4,8 +4,8 @@ import '../../model/students_list_response.dart';
 enum StudentsListStatus { initial, loading, success, error }
 
 class StudentsListState extends Equatable {
-  final List<Student> students;
-  final List<Student> filteredStudents;
+  final List<Item> students;
+  final List<Item> filteredStudents;
   final StudentsListStatus status;
   final String? errorMessage;
   final String searchQuery;
@@ -25,8 +25,8 @@ class StudentsListState extends Equatable {
   });
 
   StudentsListState copyWith({
-    List<Student>? students,
-    List<Student>? filteredStudents,
+    List<Item>? students,
+    List<Item>? filteredStudents,
     StudentsListStatus? status,
     String? errorMessage,
     String? searchQuery,
@@ -49,26 +49,34 @@ class StudentsListState extends Equatable {
 
   @override
   List<Object?> get props => [
-    students,
-    filteredStudents,
-    status,
-    errorMessage,
-    searchQuery,
-    selectedFilter,
-    sortBy,
-    sortAscending,
-  ];
+        students,
+        filteredStudents,
+        status,
+        errorMessage,
+        searchQuery,
+        selectedFilter,
+        sortBy,
+        sortAscending,
+      ];
+
+  // Enrollment status values from API: adjust these constants to match your
+  // actual API enum values (e.g. 'active', 'inactive', 'enrolled', etc.)
+  static const String _enrolledStatus = 'active';
 
   // Statistics
   int get totalStudents => students.length;
-  int get activeStudents =>
-      students.where((s) => s.accountActive == true).length;
-  int get inactiveStudents =>
-      students.where((s) => s.accountActive == false).length;
-  int get assignedStudents => students.where((s) => s.driverId != null).length;
-  int get unassignedStudents =>
-      students.where((s) => s.driverId == null).length;
 
-  int get totalProposedFee =>
-      students.fold(0, (sum, student) => sum + (student.proposedFee ?? 0));
+  int get activeStudents =>
+      students.where((s) => s.enrollmentStatus == _enrolledStatus).length;
+
+  int get inactiveStudents =>
+      students.where((s) => s.enrollmentStatus != _enrolledStatus).length;
+
+  // The Item model has no driver assignment fields, so these are placeholders.
+  // Remove or replace once driver-assignment data is available in the response.
+  int get enrolledStudents =>
+      students.where((s) => s.enrollmentStatus != null).length;
+
+  int get unenrolledStudents =>
+      students.where((s) => s.enrollmentStatus == null).length;
 }

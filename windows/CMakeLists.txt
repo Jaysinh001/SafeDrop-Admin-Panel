@@ -2,6 +2,9 @@
 cmake_minimum_required(VERSION 3.5)
 project(safedrop_panel LANGUAGES CXX)
 
+# FIX: Force minimum policy version for sub-dependencies like Firebase
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+
 # The name of the executable created for the application. Change this to change
 # the on-disk name of your application.
 set(BINARY_NAME "safedrop_panel")

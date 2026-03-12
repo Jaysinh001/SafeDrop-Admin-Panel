@@ -4,8 +4,8 @@ import '../../model/drivers_list_response.dart';
 enum DriversListStatus { initial, loading, success, error }
 
 class DriversListState extends Equatable {
-  final List<Driver> drivers;
-  final List<Driver> filteredDrivers;
+  final List<Item> drivers;
+  final List<Item> filteredDrivers;
   final DriversListStatus status;
   final String selectedFilter;
   final String searchQuery;
@@ -25,14 +25,15 @@ class DriversListState extends Equatable {
   });
 
   DriversListState copyWith({
-    List<Driver>? drivers,
-    List<Driver>? filteredDrivers,
+    List<Item>? drivers,
+    List<Item>? filteredDrivers,
     DriversListStatus? status,
     String? selectedFilter,
     String? searchQuery,
     String? sortBy,
     bool? sortAscending,
     String? errorMessage,
+    bool clearError = false,
   }) {
     return DriversListState(
       drivers: drivers ?? this.drivers,
@@ -42,31 +43,42 @@ class DriversListState extends Equatable {
       searchQuery: searchQuery ?? this.searchQuery,
       sortBy: sortBy ?? this.sortBy,
       sortAscending: sortAscending ?? this.sortAscending,
-      errorMessage: errorMessage ?? this.errorMessage,
+      errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     );
   }
 
-  Map<String, int> get driverStats {
-    return {
-      'total': drivers.length,
-      'with_bank_details': drivers.where((d) => d.hasBankDetails == true).length,
-      'mpin_set': drivers.where((d) => d.mpinSet == true).length,
-      'active':
-          drivers
-              .where((d) => d.hasBankDetails == true && d.mpinSet == true)
-              .length,
-    };
-  }
+  // ---------------------------------------------------------------------------
+  // Statistics — derived from actual Item fields
+  // ---------------------------------------------------------------------------
+
+  // Adjust the employment status string values to match your actual API enum.
+  static const String _employedStatus = 'employed';
+
+  Map<String, int> get driverStats => {
+        'total': drivers.length,
+        'independent': drivers.where((d) => d.isIndependent == true).length,
+        'employed': drivers
+            .where((d) =>
+                d.employmentStatus?.toLowerCase() == _employedStatus)
+            .length,
+        'active': drivers.where((d) => d.employmentStatus != null).length,
+      };
+
+  int get totalDrivers => drivers.length;
+  int get independentDrivers =>
+      drivers.where((d) => d.isIndependent == true).length;
+  int get employedDrivers =>
+      drivers.where((d) => d.isIndependent == false).length;
 
   @override
   List<Object?> get props => [
-    drivers,
-    filteredDrivers,
-    status,
-    selectedFilter,
-    searchQuery,
-    sortBy,
-    sortAscending,
-    errorMessage,
-  ];
+        drivers,
+        filteredDrivers,
+        status,
+        selectedFilter,
+        searchQuery,
+        sortBy,
+        sortAscending,
+        errorMessage,
+      ];
 }

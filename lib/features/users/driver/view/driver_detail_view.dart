@@ -55,11 +55,11 @@ class _DriverDetailsViewState extends State<DriverDetailsView> with SingleTicker
   Widget build(BuildContext context) {
     int driverId = 0;
     final args = widget.arguments;
-    if (args is dlr.Driver) {
-      driverId = args.id ?? 0;
-    } else if (args is Map && args['id'] != null) {
-      driverId = args['id'];
-    }
+    // if (args is dlr.Driver) {
+    //   driverId = args.id ?? 0;
+    // } else if (args is Map && args['id'] != null) {
+    //   driverId = args['id'];
+    // }
 
     return BlocProvider.value(
       value: sl<DriverDetailsBloc>()..add(DriverDetailsLoaded(driverId: driverId)),

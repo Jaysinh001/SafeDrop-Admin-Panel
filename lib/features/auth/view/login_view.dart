@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/theme/colors.dart';
 import '../../../core/utility/app_snackbar.dart';
 import '../../../shared/widgets/screen_container.dart';
 import '../../../core/routes/app_routes.dart';
@@ -113,7 +114,11 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   void _forgotPassword() {
-    AppSnackbar.info(context, "We are working on this feature", title:  'Coming Soon!');
+    AppSnackbar.info(
+      context,
+      "We are working on this feature",
+      title: 'Coming Soon!',
+    );
   }
 
   @override
@@ -124,14 +129,6 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
               previous.isSuccess != current.isSuccess && current.isSuccess,
       listener: (context, state) {
         if (state.isSuccess) {
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   const SnackBar(
-          //     content: Text('Login successful!'),
-          //     backgroundColor: Colors.green,
-          //     duration: Duration(seconds: 3),
-          //   ),
-          // );
-
           AppSnackbar.success(context, "Login Successful!");
           context.go(AppRoutes.dashboard);
         }
@@ -158,13 +155,17 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Color _getBackgroundColor(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
     if (width >= 1024) {
-      return const Color(0xFF1a1a2e);
+      // Desktop: use primary color gradient background
+      return colorScheme.surface;
     }
-    return Colors.white;
+    return colorScheme.surface;
   }
 
   Widget _buildMobileLayout() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -199,6 +200,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildTabletLayout() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Center(
       child: SingleChildScrollView(
         child: AnimatedBuilder(
@@ -244,16 +247,22 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildDesktopLayout() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Row(
       children: [
         Expanded(
           flex: 3,
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+                colors: [
+                  colorScheme.primary,
+                  AppColors.primaryLight,
+                ],
               ),
             ),
             child: AnimatedBuilder(
@@ -272,9 +281,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                       const SizedBox(height: 24),
                       Text(
                         'Admin Dashboard',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -282,8 +290,9 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                       const SizedBox(height: 12),
                       Text(
                         'Manage your application with ease',
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(color: Colors.white.withOpacity(0.8)),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.8),
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -296,7 +305,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
         Expanded(
           flex: 2,
           child: Container(
-            color: Colors.white,
+            color: colorScheme.surface,
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.all(48),
@@ -344,8 +353,11 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
       width: size,
       height: size,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+        gradient: LinearGradient(
+          colors: [
+            Theme.of(context).colorScheme.primary,
+            AppColors.primaryLight,
+          ],
         ),
         borderRadius: BorderRadius.circular(size / 4),
         boxShadow: [
@@ -365,28 +377,34 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildTitle(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    
     return Text(
       text,
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
         fontWeight: FontWeight.bold,
-        color: isDesktop ? Colors.grey[800] : null,
+        color: isDesktop ? Colors.white : colorScheme.onSurface,
       ),
       textAlign: TextAlign.center,
     );
   }
 
   Widget _buildSubtitle(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Text(
       text,
-      style: Theme.of(
-        context,
-      ).textTheme.bodyLarge?.copyWith(color: Colors.grey[600]),
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+        color: colorScheme.onSurfaceVariant,
+      ),
       textAlign: TextAlign.center,
     );
   }
 
   Widget _buildLoginForm() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Form(
       key: formKey,
       child: Column(
@@ -402,22 +420,24 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
-                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    color: colorScheme.error.withOpacity(0.1),
+                    border: Border.all(
+                      color: colorScheme.error.withOpacity(0.3),
+                    ),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.error_outline,
-                        color: Colors.red[700],
+                        color: colorScheme.error,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           state.errorMessage!,
-                          style: TextStyle(color: Colors.red[700]),
+                          style: TextStyle(color: colorScheme.error),
                         ),
                       ),
                       GestureDetector(
@@ -427,7 +447,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                             ),
                         child: Icon(
                           Icons.close,
-                          color: Colors.red[700],
+                          color: colorScheme.error,
                           size: 16,
                         ),
                       ),
@@ -451,6 +471,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildEmailField() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return TextFormField(
       controller: emailController,
       keyboardType: TextInputType.emailAddress,
@@ -460,13 +482,15 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
         prefixIcon: const Icon(Icons.email_outlined),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         filled: true,
-        fillColor: Colors.grey[50],
+        fillColor: colorScheme.surfaceContainer,
       ),
       validator: _validateEmail,
     );
   }
 
   Widget _buildPasswordField() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen:
           (previous, current) =>
@@ -493,7 +517,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.grey[50],
+            fillColor: colorScheme.surfaceContainer,
           ),
           validator: _validatePassword,
         );
@@ -502,6 +526,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildRememberMeCheckbox() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen:
           (previous, current) => previous.rememberMe != current.rememberMe,
@@ -518,7 +544,10 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            const Text('Remember me'),
+            Text(
+              'Remember me',
+              style: TextStyle(color: colorScheme.onSurface),
+            ),
           ],
         );
       },
@@ -526,6 +555,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildLoginButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen: (previous, current) => previous.isLoading != current.isLoading,
       builder: (context, state) {
@@ -536,23 +567,28 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            backgroundColor: const Color(0xFF667eea),
-            foregroundColor: Colors.white,
+            backgroundColor: colorScheme.primary,
+            foregroundColor: colorScheme.onPrimary,
             elevation: 2,
           ),
           child:
               state.isLoading
-                  ? const SizedBox(
+                  ? SizedBox(
                     height: 20,
                     width: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        colorScheme.onPrimary,
+                      ),
                     ),
                   )
                   : const Text(
                     'Sign In',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
         );
       },
@@ -560,11 +596,16 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildForgotPasswordLink() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return TextButton(
       onPressed: _forgotPassword,
-      child: const Text(
+      child: Text(
         'Forgot Password?',
-        style: TextStyle(color: Color(0xFF667eea), fontWeight: FontWeight.w500),
+        style: TextStyle(
+          color: colorScheme.primary,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

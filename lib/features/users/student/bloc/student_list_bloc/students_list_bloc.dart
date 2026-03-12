@@ -1,16 +1,18 @@
+import 'dart:developer';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../../core/data/local_storage/local_storage_service.dart';
-import '../../model/students_list_response.dart';
 import '../../repo/student_repository.dart';
+import '../../model/students_list_response.dart';
 import 'students_list_event.dart';
 import 'students_list_state.dart';
 
 class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
-
   final StudentRepository studentRepository;
   final LocalStorageService storage;
 
-  StudentsListBloc({required this.studentRepository, required this.storage}) : super(const StudentsListState()) {
+  StudentsListBloc({required this.studentRepository, required this.storage})
+      : super(const StudentsListState()) {
     on<StudentsListLoaded>(_onLoaded);
     on<StudentsListSearchQueryChanged>(_onSearchQueryChanged);
     on<StudentsListFilterChanged>(_onFilterChanged);
@@ -36,23 +38,27 @@ class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
     emit(state.copyWith(status: StudentsListStatus.loading, clearError: true));
 
     try {
-
       final response = await studentRepository.getStudentsList();
 
+
       if (response.success == true) {
-        final students = response.data?.students ?? [];
-        emit(state.copyWith(students: students, status: StudentsListStatus.success));
+        final students = response.data?.items ?? [];
+        emit(state.copyWith(
+          students: students,
+          status: StudentsListStatus.success,
+        ));
         _applyFiltersAndSort(emit);
       } else {
-        emit(
-          state.copyWith(
-            status: StudentsListStatus.error,
-            errorMessage: response.message ?? 'Failed to load students',
-          ),
-        );
+        emit(state.copyWith(
+          status: StudentsListStatus.error,
+          errorMessage: response.message,
+        ));
       }
     } catch (e) {
-      emit(state.copyWith(status: StudentsListStatus.error, errorMessage: e.toString()));
+      emit(state.copyWith(
+        status: StudentsListStatus.error,
+        errorMessage: e.toString(),
+      ));
     }
   }
 
@@ -85,36 +91,44 @@ class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
   }
 
   void _applyFiltersAndSort(Emitter<StudentsListState> emit) {
-    List<Student> filtered = List.from(state.students);
+    List<Item> filtered = List.from(state.students);
 
-    // Apply status filter
+    // Apply enrollment status filter
+    // Adjust the status string values to match your actual API enum values.
     switch (state.selectedFilter) {
       case 'active':
-        filtered = filtered.where((s) => s.accountActive == true).toList();
+        filtered = filtered
+            .where((s) => s.enrollmentStatus?.toLowerCase() == 'active')
+            .toList();
         break;
       case 'inactive':
-        filtered = filtered.where((s) => s.accountActive == false).toList();
+        filtered = filtered
+            .where((s) => s.enrollmentStatus?.toLowerCase() == 'inactive')
+            .toList();
         break;
-      case 'assigned':
-        filtered = filtered.where((s) => s.driverId != null).toList();
+      case 'enrolled':
+        filtered = filtered
+            .where((s) => s.enrollmentStatus?.toLowerCase() == 'enrolled')
+            .toList();
         break;
-      case 'unassigned':
-        filtered = filtered.where((s) => s.driverId == null).toList();
+      case 'unenrolled':
+        filtered =
+            filtered.where((s) => s.enrollmentStatus == null).toList();
         break;
+      // 'all' — no filter applied
     }
 
     // Apply search query
     if (state.searchQuery.isNotEmpty) {
       final query = state.searchQuery.toLowerCase();
-      filtered =
-          filtered.where((s) {
-            return (s.studentName?.toLowerCase().contains(query) ?? false) ||
-                (s.email?.toLowerCase().contains(query) ?? false) ||
-                (s.phoneNumber?.contains(state.searchQuery) ?? false) ||
-                s.studentId.toString().contains(state.searchQuery) ||
-                (s.driverName?.toLowerCase().contains(query) ?? false) ||
-                (s.driverCode?.toLowerCase().contains(query) ?? false);
-          }).toList();
+      filtered = filtered.where((s) {
+        return (s.name?.toLowerCase().contains(query) ?? false) ||
+            (s.email?.toLowerCase().contains(query) ?? false) ||
+            (s.phone?.contains(state.searchQuery) ?? false) ||
+            (s.id?.toString().contains(state.searchQuery) ?? false) ||
+            (s.userId?.toString().contains(state.searchQuery) ?? false) ||
+            (s.enrollmentStatus?.toLowerCase().contains(query) ?? false);
+      }).toList();
     }
 
     // Apply sorting
@@ -122,16 +136,19 @@ class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
       int comparison = 0;
       switch (state.sortBy) {
         case 'name':
-          comparison = (a.studentName ?? '').compareTo(b.studentName ?? '');
+          comparison = (a.name ?? '').compareTo(b.name ?? '');
           break;
-        case 'fee':
-          comparison = (a.proposedFee ?? 0).compareTo(b.proposedFee ?? 0);
+        case 'id':
+          comparison = (a.id ?? 0).compareTo(b.id ?? 0);
           break;
-        case 'student_id':
-          comparison = (a.studentId ?? 0).compareTo(b.studentId ?? 0);
+        case 'admission_date':
+          final aDate = a.admissionDate ?? DateTime(0);
+          final bDate = b.admissionDate ?? DateTime(0);
+          comparison = aDate.compareTo(bDate);
           break;
-        case 'driver':
-          comparison = (a.driverName ?? '').compareTo(b.driverName ?? '');
+        case 'enrollment_status':
+          comparison =
+              (a.enrollmentStatus ?? '').compareTo(b.enrollmentStatus ?? '');
           break;
       }
       return state.sortAscending ? comparison : -comparison;

@@ -9,10 +9,10 @@ class StudentRepository {
 
   StudentRepository({required ApiClient apiClient}) : _apiClient = apiClient;
 
-  Future<ApiResponse<StudentsListResponse>> getStudentsList() async {
+  Future<ApiResponse<Data>> getStudentsList() async {
     return await _apiClient.get(
       ApiEndpoints.studentsList,
-      parser: (json) => StudentsListResponse.fromJson(json),
+      parser: (json) => Data.fromJson(json),
     );
   }
 
