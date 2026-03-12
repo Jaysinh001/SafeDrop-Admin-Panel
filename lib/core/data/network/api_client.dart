@@ -47,6 +47,9 @@ class ApiClient {
           final responseData = error.response?.data;
 
           if (responseData != null) {
+
+            log('responseData["code"] type : ${responseData["code"].runtimeType}');
+
             if (responseData["code"] == ApiCodes.expiredToken) {
               try {
                 await _refreshToken();

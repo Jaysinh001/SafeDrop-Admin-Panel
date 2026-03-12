@@ -16,12 +16,19 @@ class AdminAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       height: 70,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: Theme.of(context).appBarTheme.backgroundColor,
         border: Border(
-          bottom: BorderSide(color: AppColors.outline, width: 0.5),
+          bottom: BorderSide(
+            color: isDark 
+              ? AppColors.darkOutlineVariant 
+              : AppColors.outlineVariant,
+            width: 0.5,
+          ),
         ),
       ),
       child: Padding(
@@ -70,11 +77,11 @@ class AdminAppBar extends StatelessWidget {
                     builder: (context, state) {
                       return Text(
                         state.currentPageTitle,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineSmall?.copyWith(
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
+                          color: isDark 
+                            ? AppColors.darkTextPrimary 
+                            : AppColors.textPrimary,
                         ),
                         overflow: TextOverflow.ellipsis,
                         maxLines: 1,
@@ -104,8 +111,12 @@ class AdminAppBar extends StatelessWidget {
                                     ).textTheme.bodySmall?.copyWith(
                                       color:
                                           isLast
-                                              ? AppColors.primary
-                                              : AppColors.textSecondary,
+                                              ? (isDark 
+                                                ? AppColors.primaryLight 
+                                                : AppColors.primary)
+                                              : (isDark 
+                                                ? AppColors.darkTextSecondary 
+                                                : AppColors.textSecondary),
                                       fontWeight:
                                           isLast
                                               ? FontWeight.w600
@@ -114,10 +125,12 @@ class AdminAppBar extends StatelessWidget {
                                   ),
                                   if (!isLast) ...[
                                     const SizedBox(width: 4),
-                                    const Icon(
+                                    Icon(
                                       Icons.chevron_right,
                                       size: 14,
-                                      color: AppColors.textTertiary,
+                                      color: isDark 
+                                        ? AppColors.darkOutlineVariant 
+                                        : AppColors.outlineVariant,
                                     ),
                                     const SizedBox(width: 4),
                                   ],
@@ -132,14 +145,14 @@ class AdminAppBar extends StatelessWidget {
             ),
 
             // Action Buttons
-            _buildAppBarActions(context),
+            _buildAppBarActions(context, isDark),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildAppBarActions(BuildContext context) {
+  Widget _buildAppBarActions(BuildContext context, bool isDark) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -148,10 +161,21 @@ class AdminAppBar extends StatelessWidget {
           onPressed:
               () => context.go(
                 AppRoutes.dashboard,
-              ), // Placeholder for notifications
-          icon: const Badge(
-            label: Text('3'),
-            child: Icon(Icons.notifications_outlined),
+              ),
+          icon: Badge(
+            label: const Text('3'),
+            backgroundColor: isDark 
+              ? AppColors.primaryLight 
+              : AppColors.primary,
+            textColor: isDark 
+              ? AppColors.darkOnPrimary 
+              : AppColors.onPrimary,
+            child: Icon(
+              Icons.notifications_outlined,
+              color: isDark 
+                ? AppColors.darkTextSecondary 
+                : AppColors.textSecondary,
+            ),
           ),
           tooltip: 'Notifications',
         ),
@@ -159,8 +183,13 @@ class AdminAppBar extends StatelessWidget {
         // Search
         IconButton(
           onPressed:
-              () => context.go(AppRoutes.dashboard), // Placeholder for search
-          icon: const Icon(Icons.search),
+              () => context.go(AppRoutes.dashboard),
+          icon: Icon(
+            Icons.search,
+            color: isDark 
+              ? AppColors.darkTextSecondary 
+              : AppColors.textSecondary,
+          ),
           tooltip: 'Search',
         ),
 
@@ -169,7 +198,7 @@ class AdminAppBar extends StatelessWidget {
           onSelected: (value) {
             switch (value) {
               case 'profile':
-                context.go(AppRoutes.dashboard); // Placeholder for profile
+                context.go(AppRoutes.dashboard);
                 break;
               case 'settings':
                 context.go(AppRoutes.settings);
@@ -179,47 +208,78 @@ class AdminAppBar extends StatelessWidget {
                 break;
             }
           },
-          itemBuilder:
-              (context) => [
-                const PopupMenuItem(
-                  value: 'profile',
-                  child: ListTile(
-                    leading: Icon(Icons.person),
-                    title: Text('Profile'),
-                    contentPadding: EdgeInsets.zero,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: 'profile',
+              child: ListTile(
+                leading: Icon(
+                  Icons.person,
+                  color: isDark 
+                    ? AppColors.darkTextSecondary 
+                    : AppColors.textSecondary,
+                ),
+                title: Text(
+                  'Profile',
+                  style: TextStyle(
+                    color: isDark 
+                      ? AppColors.darkTextPrimary 
+                      : AppColors.textPrimary,
                   ),
                 ),
-                const PopupMenuItem(
-                  value: 'settings',
-                  child: ListTile(
-                    leading: Icon(Icons.settings),
-                    title: Text('Settings'),
-                    contentPadding: EdgeInsets.zero,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            PopupMenuItem(
+              value: 'settings',
+              child: ListTile(
+                leading: Icon(
+                  Icons.settings,
+                  color: isDark 
+                    ? AppColors.darkTextSecondary 
+                    : AppColors.textSecondary,
+                ),
+                title: Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: isDark 
+                      ? AppColors.darkTextPrimary 
+                      : AppColors.textPrimary,
                   ),
                 ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: ListTile(
-                    leading: Icon(Icons.logout, color: AppColors.error),
-                    title: Text(
-                      'Logout',
-                      style: TextStyle(color: AppColors.error),
-                    ),
-                    contentPadding: EdgeInsets.zero,
-                  ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+            const PopupMenuDivider(),
+            PopupMenuItem(
+              value: 'logout',
+              child: ListTile(
+                leading: const Icon(
+                  Icons.logout,
+                  color: AppColors.error,
                 ),
-              ],
+                title: const Text(
+                  'Logout',
+                  style: TextStyle(color: AppColors.error),
+                ),
+                contentPadding: EdgeInsets.zero,
+              ),
+            ),
+          ],
           child: Container(
             margin: const EdgeInsets.only(left: 8),
             child: CircleAvatar(
               radius: 18,
-              backgroundColor: AppColors.primaryContainer,
+              backgroundColor: isDark 
+                ? AppColors.primaryDark 
+                : AppColors.primaryContainer,
               child: Text(
                 'A',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: AppColors.primary,
+                style: TextStyle(
+                  color: isDark 
+                    ? AppColors.primaryLight 
+                    : AppColors.primary,
                   fontWeight: FontWeight.w600,
+                  fontSize: 14,
                 ),
               ),
             ),
@@ -230,36 +290,59 @@ class AdminAppBar extends StatelessWidget {
   }
 
   void _handleLogout(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Logout'),
-            content: const Text('Are you sure you want to logout?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('No'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final storage = sl<LocalStorageService>();
-
-                  await storage.clearAll();
-
-                  if (context.mounted) {
-                    // Navigator.of(context).pop();
-                    context.go(AppRoutes.login);
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text('Yes'),
-              ),
-            ],
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Logout',
+          style: TextStyle(
+            color: isDark 
+              ? AppColors.darkTextPrimary 
+              : AppColors.textPrimary,
           ),
+        ),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(
+            color: isDark 
+              ? AppColors.darkTextSecondary 
+              : AppColors.textSecondary,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'No',
+              style: TextStyle(
+                color: isDark 
+                  ? AppColors.primaryLight 
+                  : AppColors.primary,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final storage = sl<LocalStorageService>();
+              await storage.clearAll();
+
+              if (dialogContext.mounted) {
+                Navigator.of(dialogContext).pop();
+                if (context.mounted) {
+                  context.go(AppRoutes.login);
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
     );
   }
 }

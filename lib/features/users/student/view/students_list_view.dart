@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
-import '../bloc/students_list_bloc.dart';
-import '../bloc/students_list_event.dart';
-import '../bloc/students_list_state.dart';
+import '../bloc/student_list_bloc/students_list_bloc.dart';
+import '../bloc/student_list_bloc/students_list_event.dart';
+import '../bloc/student_list_bloc/students_list_state.dart';
 import '../model/students_list_response.dart';
 
 class StudentsListView extends StatelessWidget {
@@ -33,7 +33,7 @@ class StudentsListView extends StatelessWidget {
             Expanded(
               child: BlocBuilder<StudentsListBloc, StudentsListState>(
                 builder: (context, state) {
-                  if (state.isLoading) {
+                  if (state.status == StudentsListStatus.loading) {
                     return const LoadingView(title: "Loading students...");
                   }
 

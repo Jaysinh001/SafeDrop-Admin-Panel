@@ -1,30 +1,48 @@
 import 'package:equatable/equatable.dart';
-import '../model/driver_details_response.dart';
+import '../../model/driver_details_response.dart';
+
+enum DriverDetailStatus { initial, loading, error, success }
 
 class DriverDetailsState extends Equatable {
+  final DriverDetailStatus status;
   final Data? driverDetails;
-  final bool isLoading;
   final int selectedTab;
   final int driverId;
+  final bool showSuspendConfirmation;
+  final bool showNotificationSent;
+  final String? contactPhoneNumber;
+  final String? errorMessage;
 
   const DriverDetailsState({
+    this.status = DriverDetailStatus.initial,
     this.driverDetails,
-    this.isLoading = false,
     this.selectedTab = 0,
     this.driverId = 0,
+    this.showSuspendConfirmation = false,
+    this.showNotificationSent = false,
+    this.contactPhoneNumber,
+    this.errorMessage,
   });
 
   DriverDetailsState copyWith({
     Data? driverDetails,
-    bool? isLoading,
+    DriverDetailStatus? status,
     int? selectedTab,
     int? driverId,
+    bool? showSuspendConfirmation,
+    bool? showNotificationSent,
+    String? contactPhoneNumber,
+    String? errorMessage,
   }) {
     return DriverDetailsState(
       driverDetails: driverDetails ?? this.driverDetails,
-      isLoading: isLoading ?? this.isLoading,
+      status: status ?? this.status,
       selectedTab: selectedTab ?? this.selectedTab,
       driverId: driverId ?? this.driverId,
+      showSuspendConfirmation: showSuspendConfirmation ?? this.showSuspendConfirmation,
+      showNotificationSent: showNotificationSent ?? this.showNotificationSent,
+      contactPhoneNumber: contactPhoneNumber ?? this.contactPhoneNumber,
+      errorMessage: errorMessage ?? this.errorMessage,
     );
   }
 
@@ -46,5 +64,14 @@ class DriverDetailsState extends Equatable {
   }
 
   @override
-  List<Object?> get props => [driverDetails, isLoading, selectedTab, driverId];
+  List<Object?> get props => [
+    driverDetails,
+    status,
+    selectedTab,
+    driverId,
+    showSuspendConfirmation,
+    showNotificationSent,
+    contactPhoneNumber,
+    errorMessage,
+  ];
 }

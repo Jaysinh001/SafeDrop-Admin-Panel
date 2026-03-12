@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
-import '../bloc/driver_details_bloc.dart';
-import '../bloc/driver_details_event.dart';
-import '../bloc/driver_details_state.dart';
+import '../bloc/driver_details_bloc/driver_details_bloc.dart';
+import '../bloc/driver_details_bloc/driver_details_event.dart';
+import '../bloc/driver_details_bloc/driver_details_state.dart';
 import '../model/driver_details_response.dart';
 import '../model/drivers_list_response.dart' as dlr;
 
@@ -14,13 +14,47 @@ import '../model/drivers_list_response.dart' as dlr;
 // DRIVER DETAILS VIEW
 // =============================================================================
 
-class DriverDetailsView extends StatelessWidget {
-  const DriverDetailsView({super.key});
+class DriverDetailsView extends StatefulWidget {
+  final dynamic arguments;
+
+  const DriverDetailsView({
+    super.key,
+    this.arguments,
+  });
+
+  @override
+  State<DriverDetailsView> createState() => _DriverDetailsViewState();
+}
+
+class _DriverDetailsViewState extends State<DriverDetailsView> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(_handleTabChange);
+  }
+
+  @override
+  void dispose() {
+    _tabController.removeListener(_handleTabChange);
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _handleTabChange() {
+    if (!_tabController.indexIsChanging) {
+      context.read<DriverDetailsBloc>().add(
+        DriverDetailsTabChanged(_tabController.index),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     int driverId = 0;
-    final args = Get.arguments;
+    final args = widget.arguments;
     if (args is dlr.Driver) {
       driverId = args.id ?? 0;
     } else if (args is Map && args['id'] != null) {
@@ -28,37 +62,137 @@ class DriverDetailsView extends StatelessWidget {
     }
 
     return BlocProvider.value(
-      value:
-          sl<DriverDetailsBloc>()..add(DriverDetailsLoaded(driverId: driverId)),
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        body: BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
-          builder: (context, state) {
-            if (state.isLoading) {
-              return const LoadingView(title: 'Loading driver details...');
-            }
+      value: sl<DriverDetailsBloc>()..add(DriverDetailsLoaded(driverId: driverId)),
+      child: BlocListener<DriverDetailsBloc, DriverDetailsState>(
+        listener: _handleStateChanges,
+        child: Scaffold(
+          backgroundColor: Colors.grey[50],
+          body: BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
+            builder: (context, state) {
+              if (state.status == DriverDetailStatus.loading) {
+                return const LoadingView(title: 'Loading driver details...');
+              }
 
-            if (state.driverDetails == null) {
-              return _buildErrorState(context);
-            }
+              if (state.driverDetails == null) {
+                return _buildErrorState(context);
+              }
 
-            return Column(
-              children: [
-                _buildDriverHeader(context, state),
-                _buildTabBar(context, state),
-                Expanded(child: _buildTabContent(context, state)),
-              ],
-            );
-          },
+              return Column(
+                children: [
+                  _buildDriverHeader(context, state),
+                  _buildTabBar(context, state),
+                  Expanded(
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _OverviewTab(state: state),
+                        _WalletTab(wallet: state.wallet),
+                        _BankDetailsTab(bankDetails: state.bankDetails),
+                        _VehiclesTab(vehicles: state.vehicles),
+                        _ActivityTab(driver: state.driver, fcmToken: state.fcmToken),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          floatingActionButton: Builder(
+            builder: (context) {
+              return BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
+                builder: (context, state) => _buildFloatingActions(context, state),
+              );
+            },
+          ),
         ),
-        floatingActionButton: Builder(
-          builder: (context) {
-            return BlocBuilder<DriverDetailsBloc, DriverDetailsState>(
-              builder:
-                  (context, state) => _buildFloatingActions(context, state),
-            );
-          },
+      ),
+    );
+  }
+
+  void _handleStateChanges(BuildContext context, DriverDetailsState state) {
+    // Show error snackbar
+    if (state.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage!),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
+      );
+    }
+
+    // Show suspend confirmation dialog
+    if (state.showSuspendConfirmation) {
+      _showSuspendDialog(context);
+    }
+
+    // Show notification sent message
+    if (state.showNotificationSent) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Notification sent to driver'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+
+    // Handle contact request
+    if (state.contactPhoneNumber != null) {
+      _launchPhone(state.contactPhoneNumber!);
+    }
+  }
+
+  Future<void> _launchPhone(String phoneNumber) async {
+    final Uri launchUri = Uri(
+      scheme: 'tel',
+      path: "+$phoneNumber",
+    );
+
+    try {
+      if (await canLaunchUrl(launchUri)) {
+        await launchUrl(launchUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Could not launch phone')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  void _showSuspendDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Suspend Driver'),
+        content: const Text('Are you sure you want to suspend this driver?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Driver suspended successfully'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Suspend'),
+          ),
+        ],
       ),
     );
   }
@@ -81,7 +215,7 @@ class DriverDetailsView extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                onPressed: () => Get.back(),
+                onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.arrow_back),
               ),
               const Spacer(),
@@ -321,11 +455,9 @@ class DriverDetailsView extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         ElevatedButton.icon(
-          onPressed:
-              () => Get.snackbar(
-                'Edit Driver',
-                'Edit functionality coming soon!',
-              ),
+          onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Edit functionality coming soon!')),
+          ),
           icon: const Icon(Icons.edit, size: 16),
           label: const Text('Edit'),
         ),
@@ -346,24 +478,17 @@ class DriverDetailsView extends StatelessWidget {
   Widget _buildTabBar(BuildContext context, DriverDetailsState state) {
     return Container(
       color: Colors.white,
-      child:
-          MediaQuery.of(context).size.width > 768
-              ? _buildDesktopTabBar(context, state)
-              : _buildMobileTabBar(context, state),
+      child: MediaQuery.of(context).size.width > 768
+          ? _buildDesktopTabBar(context, state)
+          : _buildMobileTabBar(context, state),
     );
   }
 
   Widget _buildDesktopTabBar(BuildContext context, DriverDetailsState state) {
     final bloc = context.read<DriverDetailsBloc>();
     return TabBar(
-      controller: TabController(
-        length: bloc.tabTitles.length,
-        vsync: Scaffold.of(context),
-        initialIndex: state.selectedTab,
-      ),
-      tabs:
-          bloc.tabTitles.map((title) => Tab(text: title, height: 48)).toList(),
-      onTap: (index) => bloc.add(DriverDetailsTabChanged(index)),
+      controller: _tabController,
+      tabs: bloc.tabTitles.map((title) => Tab(text: title, height: 48)).toList(),
       isScrollable: true,
       labelColor: Colors.blue,
       unselectedLabelColor: Colors.grey[600],
@@ -378,48 +503,31 @@ class DriverDetailsView extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
-        children:
-            bloc.tabTitles.asMap().entries.map((entry) {
-              final index = entry.key;
-              final title = entry.value;
-              final isSelected = state.selectedTab == index;
+        children: bloc.tabTitles.asMap().entries.map((entry) {
+          final index = entry.key;
+          final title = entry.value;
+          final isSelected = state.selectedTab == index;
 
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(title),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    if (selected) bloc.add(DriverDetailsTabChanged(index));
-                  },
-                  selectedColor: Colors.blue.withOpacity(0.2),
-                  labelStyle: TextStyle(
-                    color: isSelected ? Colors.blue : Colors.grey[700],
-                    fontWeight:
-                        isSelected ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                ),
-              );
-            }).toList(),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(title),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  _tabController.animateTo(index);
+                }
+              },
+              selectedColor: Colors.blue.withOpacity(0.2),
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.blue : Colors.grey[700],
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
-  }
-
-  Widget _buildTabContent(BuildContext context, DriverDetailsState state) {
-    switch (state.selectedTab) {
-      case 0:
-        return _OverviewTab(state: state);
-      case 1:
-        return _WalletTab(wallet: state.wallet);
-      case 2:
-        return _BankDetailsTab(bankDetails: state.bankDetails);
-      case 3:
-        return _VehiclesTab(vehicles: state.vehicles);
-      case 4:
-        return _ActivityTab(driver: state.driver, fcmToken: state.fcmToken);
-      default:
-        return _OverviewTab(state: state);
-    }
   }
 
   Widget _buildFloatingActions(BuildContext context, DriverDetailsState state) {
@@ -437,8 +545,9 @@ class DriverDetailsView extends StatelessWidget {
   }
 
   void _showMobileActionsSheet(BuildContext context, DriverDetailsBloc bloc) {
-    Get.bottomSheet(
-      Container(
+    showModalBottomSheet(
+      context: context,
+      builder: (bottomSheetContext) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -451,7 +560,7 @@ class DriverDetailsView extends StatelessWidget {
                 leading: const Icon(Icons.phone, color: Colors.green),
                 title: const Text('Call Driver'),
                 onTap: () {
-                  Get.back();
+                  Navigator.pop(bottomSheetContext);
                   bloc.add(DriverDetailsContactRequested());
                 },
               ),
@@ -459,7 +568,7 @@ class DriverDetailsView extends StatelessWidget {
                 leading: const Icon(Icons.notifications, color: Colors.blue),
                 title: const Text('Send Notification'),
                 onTap: () {
-                  Get.back();
+                  Navigator.pop(bottomSheetContext);
                   bloc.add(DriverDetailsNotificationRequested());
                 },
               ),
@@ -467,10 +576,11 @@ class DriverDetailsView extends StatelessWidget {
                 leading: const Icon(Icons.edit, color: Colors.orange),
                 title: const Text('Edit Driver'),
                 onTap: () {
-                  Get.back();
-                  Get.snackbar(
-                    'Edit Driver',
-                    'Edit functionality coming soon!',
+                  Navigator.pop(bottomSheetContext);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Edit functionality coming soon!'),
+                    ),
                   );
                 },
               ),
@@ -478,7 +588,7 @@ class DriverDetailsView extends StatelessWidget {
                 leading: const Icon(Icons.block, color: Colors.red),
                 title: const Text('Suspend Driver'),
                 onTap: () {
-                  Get.back();
+                  Navigator.pop(bottomSheetContext);
                   bloc.add(DriverDetailsSuspendRequested());
                 },
               ),
@@ -486,7 +596,7 @@ class DriverDetailsView extends StatelessWidget {
                 leading: const Icon(Icons.refresh),
                 title: const Text('Refresh'),
                 onTap: () {
-                  Get.back();
+                  Navigator.pop(bottomSheetContext);
                   bloc.add(DriverDetailsRefreshed());
                 },
               ),
@@ -643,10 +753,9 @@ class _OverviewTab extends StatelessWidget {
       padding: EdgeInsets.all(
         MediaQuery.of(context).size.width > 768 ? 24 : 16,
       ),
-      child:
-          MediaQuery.of(context).size.width > 1024
-              ? _buildDesktopLayout(context)
-              : _buildMobileLayout(context),
+      child: MediaQuery.of(context).size.width > 1024
+          ? _buildDesktopLayout(context)
+          : _buildMobileLayout(context),
     );
   }
 

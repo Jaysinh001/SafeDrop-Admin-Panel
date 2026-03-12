@@ -1,10 +1,13 @@
 import 'package:equatable/equatable.dart';
-import '../model/student_details_response.dart';
+import '../../model/student_details_response.dart';
+
+
+enum StudentDetailStatus { initial, loading, success, error }
 
 class StudentDetailState extends Equatable {
   final int studentId;
   final StudentDetails? studentDetails;
-  final bool isLoading;
+  final StudentDetailStatus status;
   final int selectedTab;
   final String transactionFilter;
   final String? errorMessage;
@@ -12,7 +15,7 @@ class StudentDetailState extends Equatable {
   const StudentDetailState({
     this.studentId = 0,
     this.studentDetails,
-    this.isLoading = false,
+    this.status = StudentDetailStatus.initial,
     this.selectedTab = 0,
     this.transactionFilter = 'all',
     this.errorMessage,
@@ -21,7 +24,7 @@ class StudentDetailState extends Equatable {
   StudentDetailState copyWith({
     int? studentId,
     StudentDetails? studentDetails,
-    bool? isLoading,
+    StudentDetailStatus? status,
     int? selectedTab,
     String? transactionFilter,
     String? errorMessage,
@@ -29,7 +32,7 @@ class StudentDetailState extends Equatable {
     return StudentDetailState(
       studentId: studentId ?? this.studentId,
       studentDetails: studentDetails ?? this.studentDetails,
-      isLoading: isLoading ?? this.isLoading,
+      status: status ?? this.status,
       selectedTab: selectedTab ?? this.selectedTab,
       transactionFilter: transactionFilter ?? this.transactionFilter,
       errorMessage: errorMessage ?? this.errorMessage,
@@ -40,7 +43,7 @@ class StudentDetailState extends Equatable {
   List<Object?> get props => [
     studentId,
     studentDetails,
-    isLoading,
+    status,
     selectedTab,
     transactionFilter,
     errorMessage,

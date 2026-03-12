@@ -22,7 +22,7 @@ class DashboardView extends StatelessWidget {
     return BlocProvider.value(
       value: sl<DashboardBloc>(),
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         body: BlocBuilder<DashboardBloc, DashboardState>(
           buildWhen:
               (previous, current) => previous.isLoading != current.isLoading,
@@ -65,6 +65,8 @@ class DashboardView extends StatelessWidget {
 
   Widget _buildDashboardHeader(BuildContext context, DashboardState state) {
     final width = MediaQuery.of(context).size.width;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Row(
       children: [
         Expanded(
@@ -75,15 +77,15 @@ class DashboardView extends StatelessWidget {
                 'Dashboard Overview',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+                  color: colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 'Welcome back! Here\'s what\'s happening with your store today.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -99,10 +101,12 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildTimeRangeSelector(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.outline),
+        border: Border.all(color: colorScheme.outline),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -141,13 +145,15 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildStatsCards(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final stats = [
       StatCardData(
         title: 'Total Users',
         value: state.totalUsers.toString(),
         subtitle: '+12% from last month',
         icon: Icons.people,
-        color: AppColors.primary,
+        color: colorScheme.primary,
         trend: 12.0,
       ),
       StatCardData(
@@ -234,6 +240,8 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildRevenueChart(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -244,9 +252,10 @@ class DashboardView extends StatelessWidget {
               children: [
                 Text(
                   'Revenue Overview',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const Spacer(),
                 Icon(Icons.trending_up, color: AppColors.success, size: 20),
@@ -257,7 +266,7 @@ class DashboardView extends StatelessWidget {
               height: 300,
               child: SimpleLineChart(
                 data: state.revenueChartData,
-                color: AppColors.primary,
+                color: colorScheme.primary,
               ),
             ),
           ],
@@ -267,6 +276,8 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildOrderStatusChart(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -275,9 +286,10 @@ class DashboardView extends StatelessWidget {
           children: [
             Text(
               'Order Status',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -316,6 +328,8 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildRecentActivity(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -326,9 +340,10 @@ class DashboardView extends StatelessWidget {
               children: [
                 Text(
                   'Recent Activity',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const Spacer(),
                 TextButton(
@@ -342,7 +357,9 @@ class DashboardView extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: state.recentActivities.length,
-              separatorBuilder: (context, index) => const Divider(),
+              separatorBuilder:
+                  (context, index) =>
+                      Divider(color: colorScheme.outlineVariant, height: 1),
               itemBuilder: (context, index) {
                 final activity = state.recentActivities[index];
                 return ActivityTile(activity: activity);
@@ -355,6 +372,8 @@ class DashboardView extends StatelessWidget {
   }
 
   Widget _buildTopProducts(BuildContext context, DashboardState state) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -365,9 +384,10 @@ class DashboardView extends StatelessWidget {
               children: [
                 Text(
                   'Top Products',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
                 const Spacer(),
                 TextButton(
@@ -381,7 +401,9 @@ class DashboardView extends StatelessWidget {
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               itemCount: state.topProducts.length,
-              separatorBuilder: (context, index) => const Divider(),
+              separatorBuilder:
+                  (context, index) =>
+                      Divider(color: colorScheme.outlineVariant, height: 1),
               itemBuilder: (context, index) {
                 final product = state.topProducts[index];
                 return ProductTile(product: product);
@@ -423,6 +445,8 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -448,14 +472,14 @@ class StatCard extends StatelessWidget {
               data.value,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+                color: colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               data.title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
+                color: colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -464,7 +488,8 @@ class StatCard extends StatelessWidget {
               children: [
                 Icon(
                   data.trend >= 0 ? Icons.trending_up : Icons.trending_down,
-                  color: data.trend >= 0 ? AppColors.success : AppColors.error,
+                  color:
+                      data.trend >= 0 ? AppColors.success : colorScheme.error,
                   size: 16,
                 ),
                 const SizedBox(width: 4),
@@ -472,7 +497,7 @@ class StatCard extends StatelessWidget {
                   data.subtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color:
-                        data.trend >= 0 ? AppColors.success : AppColors.error,
+                        data.trend >= 0 ? AppColors.success : colorScheme.error,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -496,6 +521,8 @@ class ActivityTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
@@ -504,16 +531,20 @@ class ActivityTile extends StatelessWidget {
       ),
       title: Text(
         activity.title,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
       ),
-      subtitle: Text(activity.subtitle),
+      subtitle: Text(
+        activity.subtitle,
+        style: TextStyle(color: colorScheme.onSurfaceVariant),
+      ),
       trailing: Text(
         activity.time,
         style: Theme.of(
           context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+        ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
     );
   }
@@ -530,25 +561,29 @@ class ProductTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: AppColors.primaryContainer,
+          color: colorScheme.primaryContainer,
           borderRadius: BorderRadius.circular(8),
         ),
-        child: const Icon(Icons.phone_iphone, color: AppColors.primary),
+        child: Icon(Icons.phone_iphone, color: colorScheme.primary),
       ),
       title: Text(
         product.name,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
       ),
       subtitle: Text(
         '${product.sales} sales • ₹${product.revenue.toStringAsFixed(0)}',
+        style: TextStyle(color: colorScheme.onSurfaceVariant),
       ),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -556,13 +591,13 @@ class ProductTile extends StatelessWidget {
           color:
               product.trend >= 0
                   ? AppColors.successContainer
-                  : AppColors.errorContainer,
+                  : colorScheme.errorContainer,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           '${product.trend >= 0 ? '+' : ''}${product.trend.toStringAsFixed(1)}%',
           style: TextStyle(
-            color: product.trend >= 0 ? AppColors.success : AppColors.error,
+            color: product.trend >= 0 ? AppColors.success : colorScheme.error,
             fontSize: 12,
             fontWeight: FontWeight.w600,
           ),
@@ -584,9 +619,11 @@ class SimpleLineChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.outline.withOpacity(0.3)),
+        border: Border.all(color: colorScheme.outlineVariant),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
@@ -597,15 +634,15 @@ class SimpleLineChart extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Revenue Chart',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
             Text(
               '(Chart library implementation needed)',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+              ),
             ),
           ],
         ),
@@ -621,12 +658,14 @@ class SimplePieChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Expanded(
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.outline.withOpacity(0.3)),
+              border: Border.all(color: colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
@@ -636,19 +675,19 @@ class SimplePieChart extends StatelessWidget {
                   Icon(
                     Icons.pie_chart,
                     size: 48,
-                    color: AppColors.primary.withOpacity(0.5),
+                    color: colorScheme.primary.withOpacity(0.5),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Order Status Chart',
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   Text(
                     '(Chart library implementation needed)',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -677,7 +716,8 @@ class SimplePieChart extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '${item.label} (${item.percentage.toInt()}%)',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: colorScheme.onSurface),
                         ),
                       ],
                     ),

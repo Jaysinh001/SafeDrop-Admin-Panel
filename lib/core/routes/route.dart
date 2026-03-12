@@ -53,18 +53,18 @@ class AppPages {
             path: AppRoutes.dashboard,
             builder: (context, state) => const DashboardView(),
           ),
-          GoRoute(
-            path: AppRoutes.withdrawals,
-            builder: (context, state) => const WithdrawalRequestsView(),
-          ),
-          GoRoute(
-            path: AppRoutes.transactions,
-            builder: (context, state) => const TransactionsListView(),
-          ),
-          GoRoute(
-            path: AppRoutes.transactionDetails,
-            builder: (context, state) => const TransactionDetailsView(),
-          ),
+          // GoRoute(
+          //   path: AppRoutes.withdrawals,
+          //   builder: (context, state) => const WithdrawalRequestsView(),
+          // ),
+          // GoRoute(
+          //   path: AppRoutes.transactions,
+          //   builder: (context, state) => const TransactionsListView(),
+          // ),
+          // GoRoute(
+          //   path: AppRoutes.transactionDetails,
+          //   builder: (context, state) => const TransactionDetailsView(),
+          // ),
           GoRoute(
             path: AppRoutes.driversList,
             builder: (context, state) => const DriversListView(),

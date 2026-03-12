@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
 
 import '../../../core/theme/colors.dart';
 import '../model/dashboard_data_models.dart';
@@ -150,7 +149,8 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      Get.snackbar('Error', 'Failed to load dashboard data');
+      // Get.snackbar('Error', 'Failed to load dashboard data');
+
       emit(state.copyWith(isLoading: false));
     }
   }

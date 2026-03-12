@@ -1,13 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
-import 'package:safedrop_panel/core/services/network_services_api.dart';
 
-import '../model/drivers_list_response.dart';
+import '../../../../../core/data/local_storage/local_storage_service.dart';
+import '../../model/drivers_list_response.dart';
+import '../../repo/driver_repository.dart';
 import 'drivers_list_event.dart';
 import 'drivers_list_state.dart';
 
 class DriversListBloc extends Bloc<DriversListEvent, DriversListState> {
+  final DriverRepository driverRepository;
+  final LocalStorageService storage;
+
   final List<String> filterOptions = [
     'all',
     'active',
@@ -24,7 +26,8 @@ class DriversListBloc extends Bloc<DriversListEvent, DriversListState> {
     'unique_code',
   ];
 
-  DriversListBloc() : super(const DriversListState()) {
+  DriversListBloc({required this.driverRepository, required this.storage})
+    : super(const DriversListState()) {
     on<DriversListLoaded>(_onLoaded);
     on<DriversListRefreshed>(_onRefreshed);
     on<DriversListSearchQueryChanged>(_onSearchQueryChanged);
@@ -49,22 +52,31 @@ class DriversListBloc extends Bloc<DriversListEvent, DriversListState> {
   }
 
   Future<void> _fetchData(Emitter<DriversListState> emit) async {
-    emit(state.copyWith(isLoading: true));
+    emit(state.copyWith(status: DriversListStatus.loading));
 
     try {
-      final res = await NetworkServicesApi().getApi(path: 'allDrivers');
-      final response = driversListResponseFromJson(res);
+      final response = await driverRepository.getDriversList();
 
-      emit(state.copyWith(drivers: response.drivers ?? []));
-      _applyFiltersAndSort(emit);
+      if (response.success) {
+        emit(state.copyWith(
+          drivers: response.data?.drivers ?? [],
+          status: DriversListStatus.success,
+          errorMessage: null,
+        ));
+        _applyFiltersAndSort(emit);
+      } else {
+        emit(state.copyWith(
+          drivers: [],
+          status: DriversListStatus.error,
+          errorMessage: response.message ?? 'Failed to load drivers',
+        ));
+      }
     } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to load drivers: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-      emit(state.copyWith(isLoading: false));
+      emit(state.copyWith(
+        status: DriversListStatus.error,
+        drivers: [],
+        errorMessage: 'Error: ${e.toString()}',
+      ));
     }
   }
 
@@ -167,6 +179,10 @@ class DriversListBloc extends Bloc<DriversListEvent, DriversListState> {
       return state.sortAscending ? comparison : -comparison;
     });
 
-    emit(state.copyWith(filteredDrivers: filtered, isLoading: false));
+    emit(state.copyWith(
+      filteredDrivers: filtered,
+      status: DriversListStatus.success,
+      errorMessage: null,
+    ));
   }
 }

@@ -5,9 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
 import '../../../../core/routes/app_routes.dart';
-import '../bloc/student_detail_bloc.dart';
-import '../bloc/student_detail_event.dart';
-import '../bloc/student_detail_state.dart';
+import '../bloc/student_details_bloc/student_detail_bloc.dart';
+import '../bloc/student_details_bloc/student_detail_event.dart';
+import '../bloc/student_details_bloc/student_detail_state.dart';
 import '../model/student_details_response.dart';
 import '../model/students_list_response.dart' as slr;
 
@@ -56,7 +56,7 @@ class StudentDetailsView extends StatelessWidget {
   }
 
   Widget _buildBody(BuildContext context, StudentDetailState state) {
-    if (state.isLoading) {
+    if (state.status == StudentDetailStatus.loading) {
       return const LoadingView(title: "Loading Student Details...");
     }
     if (state.studentDetails == null) return _buildErrorState(context);

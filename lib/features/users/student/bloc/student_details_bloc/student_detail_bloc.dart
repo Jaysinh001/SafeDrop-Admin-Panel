@@ -1,14 +1,16 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/services/network_services_api.dart';
-import '../model/student_details_response.dart';
+import '../../../../../core/data/local_storage/local_storage_service.dart';
+import '../../repo/student_repository.dart';
 import 'student_detail_event.dart';
 import 'student_detail_state.dart';
 
 class StudentDetailBloc extends Bloc<StudentDetailEvent, StudentDetailState> {
-  final NetworkServicesApi _networkServicesApi = NetworkServicesApi();
+  final StudentRepository studentRepository;
+  final LocalStorageService storage;
 
-  StudentDetailBloc() : super(const StudentDetailState()) {
+  StudentDetailBloc({required this.studentRepository, required this.storage})
+    : super(const StudentDetailState()) {
     on<StudentDetailLoaded>(_onStudentDetailLoaded);
     on<StudentDetailTabChanged>(_onTabChanged);
     on<StudentDetailTransactionFilterChanged>(_onTransactionFilterChanged);
@@ -24,28 +26,36 @@ class StudentDetailBloc extends Bloc<StudentDetailEvent, StudentDetailState> {
   ) async {
     emit(
       state.copyWith(
-        isLoading: true,
+        status: StudentDetailStatus.loading,
         studentId: event.studentId,
         errorMessage: null,
       ),
     );
 
     try {
-      final res = await _networkServicesApi.getApi(
-        path: 'student/details/${event.studentId}',
+      final response = await studentRepository.getStudentDetails(
+        event.studentId.toString(),
       );
 
-      final response = studentDetailsResponseFromJson(res);
-      emit(
-        state.copyWith(
-          studentDetails: response.studentDetails,
-          isLoading: false,
-        ),
-      );
+      if (response.success == true) {
+        emit(
+          state.copyWith(
+            studentDetails: response.data?.studentDetails,
+            status: StudentDetailStatus.success,
+          ),
+        );
+      } else {
+        emit(
+          state.copyWith(
+            status: StudentDetailStatus.error,
+            errorMessage: response.message,
+          ),
+        );
+      }
     } catch (e) {
       emit(
         state.copyWith(
-          isLoading: false,
+          status: StudentDetailStatus.error,
           errorMessage: 'Failed to load student details: $e',
         ),
       );
@@ -79,7 +89,9 @@ class StudentDetailBloc extends Bloc<StudentDetailEvent, StudentDetailState> {
   ) async {
     if (state.studentDetails?.student == null) return;
 
-    emit(state.copyWith(isLoading: true, errorMessage: null));
+    emit(
+      state.copyWith(status: StudentDetailStatus.loading, errorMessage: null),
+    );
 
     try {
       final payload = {
@@ -87,16 +99,23 @@ class StudentDetailBloc extends Bloc<StudentDetailEvent, StudentDetailState> {
         'driver_id': state.studentDetails!.driver?.id,
       };
 
-      await _networkServicesApi.postApi(
-        path: 'generateNextStudentDues',
-        data: payload,
-      );
+      final response = await studentRepository.generateNextPayment(payload);
 
-      add(StudentDetailRefreshRequested());
+      if (response.success == true) {
+        add(StudentDetailRefreshRequested());
+      } else {
+        emit(
+          state.copyWith(
+            status: StudentDetailStatus.error,
+            errorMessage: response.message,
+          ),
+        );
+        return;
+      }
     } catch (e) {
       emit(
         state.copyWith(
-          isLoading: false,
+          status: StudentDetailStatus.error,
           errorMessage: 'Failed to generate payment: $e',
         ),
       );

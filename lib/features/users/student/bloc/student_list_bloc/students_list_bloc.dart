@@ -1,11 +1,16 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:safedrop_panel/core/services/network_services_api.dart';
-import '../model/students_list_response.dart';
+import '../../../../../core/data/local_storage/local_storage_service.dart';
+import '../../model/students_list_response.dart';
+import '../../repo/student_repository.dart';
 import 'students_list_event.dart';
 import 'students_list_state.dart';
 
 class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
-  StudentsListBloc() : super(const StudentsListState()) {
+
+  final StudentRepository studentRepository;
+  final LocalStorageService storage;
+
+  StudentsListBloc({required this.studentRepository, required this.storage}) : super(const StudentsListState()) {
     on<StudentsListLoaded>(_onLoaded);
     on<StudentsListSearchQueryChanged>(_onSearchQueryChanged);
     on<StudentsListFilterChanged>(_onFilterChanged);
@@ -28,26 +33,26 @@ class StudentsListBloc extends Bloc<StudentsListEvent, StudentsListState> {
   }
 
   Future<void> _loadStudents(Emitter<StudentsListState> emit) async {
-    emit(state.copyWith(isLoading: true, clearError: true));
+    emit(state.copyWith(status: StudentsListStatus.loading, clearError: true));
 
     try {
-      final res = await NetworkServicesApi().getApi(path: "allStudents");
-      final response = studentsListResponseFromJson(res);
+
+      final response = await studentRepository.getStudentsList();
 
       if (response.success == true) {
-        final students = response.students ?? [];
-        emit(state.copyWith(students: students, isLoading: false));
+        final students = response.data?.students ?? [];
+        emit(state.copyWith(students: students, status: StudentsListStatus.success));
         _applyFiltersAndSort(emit);
       } else {
         emit(
           state.copyWith(
-            isLoading: false,
+            status: StudentsListStatus.error,
             errorMessage: response.message ?? 'Failed to load students',
           ),
         );
       }
     } catch (e) {
-      emit(state.copyWith(isLoading: false, errorMessage: e.toString()));
+      emit(state.copyWith(status: StudentsListStatus.error, errorMessage: e.toString()));
     }
   }
 

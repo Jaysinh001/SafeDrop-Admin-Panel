@@ -1,272 +1,272 @@
-// =============================================================================
-// STUDENT DETAILS CONTROLLER
-// =============================================================================
+// // =============================================================================
+// // STUDENT DETAILS CONTROLLER
+// // =============================================================================
 
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+// import 'package:flutter/material.dart';
+// import 'package:get/get.dart';
 
-import '../../../../core/routes/app_routes.dart';
-import '../../../../core/services/network_services_api.dart';
-import '../../../../core/utility/utils.dart';
-import '../model/student_details_response.dart';
-import '../model/students_list_response.dart' as slr;
+// import '../../../../core/routes/app_routes.dart';
+// import '../../../../core/services/network_services_api.dart';
+// import '../../../../core/utility/utils.dart';
+// import '../model/student_details_response.dart';
+// import '../model/students_list_response.dart' as slr;
 
-class StudentDetailsController extends GetxController {
-  // Reactive variables
-  final _studentDetails = Rx<StudentDetails?>(null);
-  final _isLoading = false.obs;
-  final _selectedTab = 0.obs;
-  final _studentId = 0.obs;
-  final _transactionFilter = 'all'.obs;
+// class StudentDetailsController extends GetxController {
+//   // Reactive variables
+//   final _studentDetails = Rx<StudentDetails?>(null);
+//   final _isLoading = false.obs;
+//   final _selectedTab = 0.obs;
+//   final _studentId = 0.obs;
+//   final _transactionFilter = 'all'.obs;
 
-  // Getters
-  StudentDetails? get studentDetails => _studentDetails.value;
-  Student? get student => _studentDetails.value?.student;
-  Driver? get driver => _studentDetails.value?.driver;
-  List<Transaction> get transactions =>
-      _studentDetails.value?.transactions ?? [];
-  StudentCreditBalance? get creditBalance =>
-      _studentDetails.value?.studentCreditBalance;
-  UniqueCode? get uniqueCode => _studentDetails.value?.uniqueCode;
-  FcmToken? get fcmToken => _studentDetails.value?.fcmToken;
-  bool get isLoading => _isLoading.value;
-  int get selectedTab => _selectedTab.value;
-  int get studentId => _studentId.value;
-  String get transactionFilter => _transactionFilter.value;
+//   // Getters
+//   StudentDetails? get studentDetails => _studentDetails.value;
+//   Student? get student => _studentDetails.value?.student;
+//   Driver? get driver => _studentDetails.value?.driver;
+//   List<Transaction> get transactions =>
+//       _studentDetails.value?.transactions ?? [];
+//   StudentCreditBalance? get creditBalance =>
+//       _studentDetails.value?.studentCreditBalance;
+//   UniqueCode? get uniqueCode => _studentDetails.value?.uniqueCode;
+//   FcmToken? get fcmToken => _studentDetails.value?.fcmToken;
+//   bool get isLoading => _isLoading.value;
+//   int get selectedTab => _selectedTab.value;
+//   int get studentId => _studentId.value;
+//   String get transactionFilter => _transactionFilter.value;
 
-  // Tab titles
-  final List<String> tabTitles = [
-    'Overview',
-    'Transactions',
-    'Fees History',
-    'Credit Balance',
-    'Activity',
-  ];
+//   // Tab titles
+//   final List<String> tabTitles = [
+//     'Overview',
+//     'Transactions',
+//     'Fees History',
+//     'Credit Balance',
+//     'Activity',
+//   ];
 
-  @override
-  void onInit() {
-    super.onInit();
-    // Get student ID from arguments
-    final args = Get.arguments;
-    if (args is slr.Student) {
-      _studentId.value = args.studentId ?? 0;
-    } else if (args is Map && args['id'] != null) {
-      _studentId.value = args['id'];
-    }
-    loadStudentDetails();
-  }
+//   @override
+//   void onInit() {
+//     super.onInit();
+//     // Get student ID from arguments
+//     final args = Get.arguments;
+//     if (args is slr.Student) {
+//       _studentId.value = args.studentId ?? 0;
+//     } else if (args is Map && args['id'] != null) {
+//       _studentId.value = args['id'];
+//     }
+//     loadStudentDetails();
+//   }
 
-  // Load student details from API
-  Future<void> loadStudentDetails() async {
-    _isLoading.value = true;
+//   // Load student details from API
+//   Future<void> loadStudentDetails() async {
+//     _isLoading.value = true;
 
-    try {
-      final res = await NetworkServicesApi().getApi(
-        path: 'student/details/${_studentId.value}',
-      );
+//     try {
+//       final res = await NetworkServicesApi().getApi(
+//         path: 'student/details/${_studentId.value}',
+//       );
 
-      final response = studentDetailsResponseFromJson(res);
+//       final response = studentDetailsResponseFromJson(res);
 
-      _studentDetails.value = response.studentDetails;
-    } catch (e) {
-      Get.snackbar(
-        'Error',
-        'Failed to load student details: $e',
-        backgroundColor: Colors.red,
-        colorText: Colors.white,
-      );
-    } finally {
-      _isLoading.value = false;
-    }
-  }
+//       _studentDetails.value = response.studentDetails;
+//     } catch (e) {
+//       Get.snackbar(
+//         'Error',
+//         'Failed to load student details: $e',
+//         backgroundColor: Colors.red,
+//         colorText: Colors.white,
+//       );
+//     } finally {
+//       _isLoading.value = false;
+//     }
+//   }
 
-  // Set selected tab
-  void setSelectedTab(int index) {
-    _selectedTab.value = index;
-  }
+//   // Set selected tab
+//   void setSelectedTab(int index) {
+//     _selectedTab.value = index;
+//   }
 
-  // Set transaction filter
-  void setTransactionFilter(String filter) {
-    _transactionFilter.value = filter;
-  }
+//   // Set transaction filter
+//   void setTransactionFilter(String filter) {
+//     _transactionFilter.value = filter;
+//   }
 
-  // Get filtered transactions
-  List<Transaction> get filteredTransactions {
-    if (_transactionFilter.value == 'all') {
-      return transactions;
-    }
-    return transactions
-        .where(
-          (t) =>
-              t.status?.toLowerCase() == _transactionFilter.value.toLowerCase(),
-        )
-        .toList();
-  }
+//   // Get filtered transactions
+//   List<Transaction> get filteredTransactions {
+//     if (_transactionFilter.value == 'all') {
+//       return transactions;
+//     }
+//     return transactions
+//         .where(
+//           (t) =>
+//               t.status?.toLowerCase() == _transactionFilter.value.toLowerCase(),
+//         )
+//         .toList();
+//   }
 
-  // Refresh data
-  Future<void> refreshData() async {
-    await loadStudentDetails();
-  }
+//   // Refresh data
+//   Future<void> refreshData() async {
+//     await loadStudentDetails();
+//   }
 
-  // Actions
-  void editStudent() {
-    Get.snackbar('Edit Student', 'Edit functionality coming soon!');
-  }
+//   // Actions
+//   void editStudent() {
+//     Get.snackbar('Edit Student', 'Edit functionality coming soon!');
+//   }
 
-  void suspendStudent() {
-    Get.defaultDialog(
-      title: 'Suspend Student',
-      middleText: 'Are you sure you want to suspend this student account?',
-      textConfirm: 'Suspend',
-      textCancel: 'Cancel',
-      confirmTextColor: Colors.white,
-      buttonColor: Colors.red,
-      onConfirm: () {
-        Get.back();
-        Get.snackbar('Success', 'Student account suspended');
-      },
-    );
-  }
+//   void suspendStudent() {
+//     Get.defaultDialog(
+//       title: 'Suspend Student',
+//       middleText: 'Are you sure you want to suspend this student account?',
+//       textConfirm: 'Suspend',
+//       textCancel: 'Cancel',
+//       confirmTextColor: Colors.white,
+//       buttonColor: Colors.red,
+//       onConfirm: () {
+//         Get.back();
+//         Get.snackbar('Success', 'Student account suspended');
+//       },
+//     );
+//   }
 
-  void contactStudent() {
-    Get.snackbar('Contact', 'Calling ${student?.phoneNumber}...');
-  }
+//   void contactStudent() {
+//     Get.snackbar('Contact', 'Calling ${student?.phoneNumber}...');
+//   }
 
-  void sendNotification() {
-    Get.snackbar('Notification', 'Notification sent to student');
-  }
+//   void sendNotification() {
+//     Get.snackbar('Notification', 'Notification sent to student');
+//   }
 
-  void viewDriverDetails() {
-    if (driver != null) {
-      Get.toNamed(AppRoutes.driverDetails, arguments: {"id": driver?.id});
-      Get.snackbar(
-        'Driver Details',
-        'Opening details for ${driver?.driverName}',
-      );
-    }
-  }
+//   void viewDriverDetails() {
+//     if (driver != null) {
+//       Get.toNamed(AppRoutes.driverDetails, arguments: {"id": driver?.id});
+//       Get.snackbar(
+//         'Driver Details',
+//         'Opening details for ${driver?.driverName}',
+//       );
+//     }
+//   }
 
-  void recordPayment() {
-    Get.snackbar(
-      'Record Payment',
-      'Payment recording functionality coming soon!',
-    );
-  }
+//   void recordPayment() {
+//     Get.snackbar(
+//       'Record Payment',
+//       'Payment recording functionality coming soon!',
+//     );
+//   }
 
-  void sendPaymentReminder() {
-    Get.snackbar('Payment Reminder', 'Payment reminder sent to student');
-  }
+//   void sendPaymentReminder() {
+//     Get.snackbar('Payment Reminder', 'Payment reminder sent to student');
+//   }
 
-  // Getter for sorted due payments (earliest to latest)
-  List<DuePayment> get sortedDuePayments {
-    // final payments = studentDetails?.duePayments ?? [];
-    // final sorted = payments.toList();
-    // sorted.sort((a, b) {
-    //   final yearCompare = (a.dueYear ?? 0).compareTo(b.dueYear ?? 0);
-    //   if (yearCompare != 0) return yearCompare;
-    //   return (a.dueMonth ?? 0).compareTo(b.dueMonth ?? 0);
-    // });
+//   // Getter for sorted due payments (earliest to latest)
+//   List<DuePayment> get sortedDuePayments {
+//     // final payments = studentDetails?.duePayments ?? [];
+//     // final sorted = payments.toList();
+//     // sorted.sort((a, b) {
+//     //   final yearCompare = (a.dueYear ?? 0).compareTo(b.dueYear ?? 0);
+//     //   if (yearCompare != 0) return yearCompare;
+//     //   return (a.dueMonth ?? 0).compareTo(b.dueMonth ?? 0);
+//     // });
 
-    // return sorted;
+//     // return sorted;
 
-    return studentDetails?.duePayments ?? [];
-  }
+//     return studentDetails?.duePayments ?? [];
+//   }
 
-  // Getter for latest due payment
-  DuePayment? get latestDuePayment {
-    if (sortedDuePayments.isEmpty) return null;
-    return sortedDuePayments.last;
-  }
+//   // Getter for latest due payment
+//   DuePayment? get latestDuePayment {
+//     if (sortedDuePayments.isEmpty) return null;
+//     return sortedDuePayments.last;
+//   }
 
-  // Add new due payment
-  Future<void> generateNextPaymentDue() async {
-    _isLoading.value = true;
+//   // Add new due payment
+//   Future<void> generateNextPaymentDue() async {
+//     _isLoading.value = true;
 
-    try {
+//     try {
 
-      Utils.showLog("generateNextPaymentDue called");
+//       Utils.showLog("generateNextPaymentDue called");
 
-      final payload = {'student_id': student?.id, 'driver_id': driver?.id};
+//       final payload = {'student_id': student?.id, 'driver_id': driver?.id};
 
-      final res = await NetworkServicesApi().postApi(
-        path: 'generateNextStudentDues',
-        data: payload,
-      );
-    } finally {
-      _isLoading.value = false;
-    }
-  }
+//       final res = await NetworkServicesApi().postApi(
+//         path: 'generateNextStudentDues',
+//         data: payload,
+//       );
+//     } finally {
+//       _isLoading.value = false;
+//     }
+//   }
 
-  // Update existing due payment
-  void updateDuePayment({
-    required int id,
-    required int amount,
-    required int dueMonth,
-    required int dueYear,
-    required String status,
-  }) {
-    // Implement API call to update due payment
-  }
+//   // Update existing due payment
+//   void updateDuePayment({
+//     required int id,
+//     required int amount,
+//     required int dueMonth,
+//     required int dueYear,
+//     required String status,
+//   }) {
+//     // Implement API call to update due payment
+//   }
 
-  // Delete due payment
-  void deleteDuePayment(int id) {
-    // Implement API call to delete due payment
-  }
+//   // Delete due payment
+//   void deleteDuePayment(int id) {
+//     // Implement API call to delete due payment
+//   }
 
-  // Get student status
-  String get studentStatus {
-    if (student?.accountActive == true && driver != null) {
-      return 'Active';
-    } else if (student?.accountActive == true) {
-      return 'Active (No Driver)';
-    } else {
-      return 'Inactive';
-    }
-  }
+//   // Get student status
+//   String get studentStatus {
+//     if (student?.accountActive == true && driver != null) {
+//       return 'Active';
+//     } else if (student?.accountActive == true) {
+//       return 'Active (No Driver)';
+//     } else {
+//       return 'Inactive';
+//     }
+//   }
 
-  Color get statusColor {
-    if (student?.accountActive == true && driver != null) {
-      return Colors.green;
-    } else if (student?.accountActive == true) {
-      return Colors.orange;
-    } else {
-      return Colors.red;
-    }
-  }
+//   Color get statusColor {
+//     if (student?.accountActive == true && driver != null) {
+//       return Colors.green;
+//     } else if (student?.accountActive == true) {
+//       return Colors.orange;
+//     } else {
+//       return Colors.red;
+//     }
+//   }
 
-  // Calculate statistics
-  int get totalPaid {
-    return transactions
-        .where((t) => t.status?.toLowerCase() == 'completed')
-        .fold(0, (sum, t) => sum + (t.amount ?? 0));
-  }
+//   // Calculate statistics
+//   int get totalPaid {
+//     return transactions
+//         .where((t) => t.status?.toLowerCase() == 'completed')
+//         .fold(0, (sum, t) => sum + (t.amount ?? 0));
+//   }
 
-  int get totalPending {
-    return transactions
-        .where((t) => t.status?.toLowerCase() == 'pending')
-        .fold(0, (sum, t) => sum + (t.amount ?? 0));
-  }
+//   int get totalPending {
+//     return transactions
+//         .where((t) => t.status?.toLowerCase() == 'pending')
+//         .fold(0, (sum, t) => sum + (t.amount ?? 0));
+//   }
 
-  int get completedTransactions {
-    return transactions
-        .where((t) => t.status?.toLowerCase() == 'completed')
-        .length;
-  }
+//   int get completedTransactions {
+//     return transactions
+//         .where((t) => t.status?.toLowerCase() == 'completed')
+//         .length;
+//   }
 
-  int get pendingTransactions {
-    return transactions
-        .where((t) => t.status?.toLowerCase() == 'pending')
-        .length;
-  }
+//   int get pendingTransactions {
+//     return transactions
+//         .where((t) => t.status?.toLowerCase() == 'pending')
+//         .length;
+//   }
 
-  int get failedTransactions {
-    return transactions
-        .where((t) => t.status?.toLowerCase() == 'failed')
-        .length;
-  }
+//   int get failedTransactions {
+//     return transactions
+//         .where((t) => t.status?.toLowerCase() == 'failed')
+//         .length;
+//   }
 
-  // Get due amount (proposed fee - credit balance)
-  int get dueAmount {
-    return (student?.proposedFee ?? 0) - (creditBalance?.credit ?? 0);
-  }
-}
+//   // Get due amount (proposed fee - credit balance)
+//   int get dueAmount {
+//     return (student?.proposedFee ?? 0) - (creditBalance?.credit ?? 0);
+//   }
+// }

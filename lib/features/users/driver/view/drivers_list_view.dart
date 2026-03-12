@@ -3,12 +3,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/routes/app_routes.dart';
-
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
-import '../bloc/drivers_list_bloc.dart';
-import '../bloc/drivers_list_event.dart';
-import '../bloc/drivers_list_state.dart';
+import '../bloc/driver_list_bloc/drivers_list_bloc.dart';
+import '../bloc/driver_list_bloc/drivers_list_event.dart';
+import '../bloc/driver_list_bloc/drivers_list_state.dart';
 import '../model/drivers_list_response.dart';
 
 // =============================================================================
@@ -22,44 +21,68 @@ class DriversListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocProvider.value(
       value: sl<DriversListBloc>(),
-      child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        body: BlocBuilder<DriversListBloc, DriversListState>(
-          builder: (context, state) {
-            return Column(
-              children: [
-                _buildHeader(context, state),
-                _buildFilterAndSearch(context, state),
-                Expanded(
-                  child: () {
-                    if (state.isLoading) {
-                      return const LoadingView(title: 'Loading drivers...');
-                    }
+      child: BlocListener<DriversListBloc, DriversListState>(
+        listener: _handleStateChanges,
+        child: Scaffold(
+          backgroundColor: Colors.grey[50],
+          body: BlocBuilder<DriversListBloc, DriversListState>(
+            builder: (context, state) {
+              return Column(
+                children: [
+                  _buildHeader(context, state),
+                  _buildFilterAndSearch(context, state),
+                  Expanded(
+                    child: () {
+                      if (state.status == DriversListStatus.loading) {
+                        return const LoadingView(title: 'Loading drivers...');
+                      }
 
-                    if (state.filteredDrivers.isEmpty) {
-                      return _buildEmptyState(context);
-                    }
+                      if (state.status == DriversListStatus.error) {
+                        return _buildErrorState(context, state);
+                      }
 
-                    return _buildDriversList(context, state);
-                  }(),
-                ),
-              ],
-            );
-          },
-        ),
-        floatingActionButton: Builder(
-          builder:
-              (context) => FloatingActionButton(
-                onPressed:
-                    () => context.read<DriversListBloc>().add(
-                      DriversListRefreshed(),
-                    ),
-                tooltip: 'Refresh',
-                child: const Icon(Icons.refresh),
-              ),
+                      if (state.filteredDrivers.isEmpty) {
+                        return _buildEmptyState(context);
+                      }
+
+                      return _buildDriversList(context, state);
+                    }(),
+                  ),
+                ],
+              );
+            },
+          ),
+          floatingActionButton: Builder(
+            builder: (context) => FloatingActionButton(
+              onPressed: () =>
+                  context.read<DriversListBloc>().add(DriversListRefreshed()),
+              tooltip: 'Refresh',
+              child: const Icon(Icons.refresh),
+            ),
+          ),
         ),
       ),
     );
+  }
+
+  void _handleStateChanges(BuildContext context, DriversListState state) {
+    // Show error snackbar
+    if (state.errorMessage != null && state.status == DriversListStatus.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.errorMessage!),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () {
+              context.read<DriversListBloc>().add(DriversListRefreshed());
+            },
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildHeader(BuildContext context, DriversListState state) {
@@ -159,10 +182,9 @@ class DriversListView extends StatelessWidget {
         color: Colors.white,
         border: Border(bottom: BorderSide(color: Colors.grey, width: 0.2)),
       ),
-      child:
-          width > 768
-              ? _buildDesktopFilterBar(context, state)
-              : _buildMobileFilterBar(context, state),
+      child: width > 768
+          ? _buildDesktopFilterBar(context, state)
+          : _buildMobileFilterBar(context, state),
     );
   }
 
@@ -314,8 +336,9 @@ class DriversListView extends StatelessWidget {
                           label: Text(_getFilterDisplayName(filter)),
                           selected: isSelected,
                           onSelected: (selected) {
-                            if (selected)
+                            if (selected) {
                               bloc.add(DriversListFilterChanged(filter));
+                            }
                           },
                           selectedColor: Colors.blue.withOpacity(0.2),
                           checkmarkColor: Colors.blue,
@@ -342,25 +365,24 @@ class DriversListView extends StatelessWidget {
                   ),
                 ],
               ),
-              itemBuilder:
-                  (context) => [
-                    const PopupMenuItem(
-                      value: 'name',
-                      child: Text('Sort by Name'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'email',
-                      child: Text('Sort by Email'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'created_date',
-                      child: Text('Sort by Join Date'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'unique_code',
-                      child: Text('Sort by Code ID'),
-                    ),
-                  ],
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'name',
+                  child: Text('Sort by Name'),
+                ),
+                const PopupMenuItem(
+                  value: 'email',
+                  child: Text('Sort by Email'),
+                ),
+                const PopupMenuItem(
+                  value: 'created_date',
+                  child: Text('Sort by Join Date'),
+                ),
+                const PopupMenuItem(
+                  value: 'unique_code',
+                  child: Text('Sort by Code ID'),
+                ),
+              ],
             ),
           ],
         ),
@@ -468,120 +490,116 @@ class DriversListView extends StatelessWidget {
               ),
             ),
           ],
-          rows:
-              state.filteredDrivers.map((driver) {
-                return DataRow(
-                  cells: [
-                    DataCell(
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundImage:
-                                driver.profilePicture != null
-                                    ? NetworkImage(driver.profilePicture!)
-                                    : null,
-                            backgroundColor: Colors.blue.withOpacity(0.1),
-                            child:
-                                driver.profilePicture == null
-                                    ? Text(
-                                      (driver.driverName ?? 'N')[0]
-                                          .toUpperCase(),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.blue,
-                                      ),
-                                    )
-                                    : null,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  driver.driverName ?? 'Unknown',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  'ID: ${driver.id}',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+          rows: state.filteredDrivers.map((driver) {
+            return DataRow(
+              cells: [
+                DataCell(
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundImage: driver.profilePicture != null
+                            ? NetworkImage(driver.profilePicture!)
+                            : null,
+                        backgroundColor: Colors.blue.withOpacity(0.1),
+                        child: driver.profilePicture == null
+                            ? Text(
+                              (driver.driverName ?? 'N')[0].toUpperCase(),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.blue,
+                              ),
+                            )
+                            : null,
                       ),
-                    ),
-                    DataCell(
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            driver.email ?? 'No email',
-                            style: const TextStyle(fontSize: 13),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            driver.phoneNumber ?? 'No phone',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              driver.driverName ?? 'Unknown',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    DataCell(
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            driver.uniqueCode ?? 'Unknown',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                            Text(
+                              'ID: ${driver.id}',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 12,
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            'ID: ${driver.uniqueCodeId ?? 'N/A'}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    DataCell(_buildDriverStatusChips(driver)),
-                    DataCell(Text(_formatDate(driver.createdAt))),
-                    DataCell(
-                      ElevatedButton.icon(
-                        onPressed: () => _openDriverDetails(context, driver),
-                        icon: const Icon(Icons.visibility, size: 16),
-                        label: const Text('View'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
+                          ],
                         ),
                       ),
+                    ],
+                  ),
+                ),
+                DataCell(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        driver.email ?? 'No email',
+                        style: const TextStyle(fontSize: 13),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        driver.phoneNumber ?? 'No phone',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                DataCell(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        driver.uniqueCode ?? 'Unknown',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      Text(
+                        'ID: ${driver.uniqueCodeId ?? 'N/A'}',
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                DataCell(_buildDriverStatusChips(driver)),
+                DataCell(Text(_formatDate(driver.createdAt))),
+                DataCell(
+                  ElevatedButton.icon(
+                    onPressed: () => _openDriverDetails(context, driver),
+                    icon: const Icon(Icons.visibility, size: 16),
+                    label: const Text('View'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                     ),
-                  ],
-                );
-              }).toList(),
+                  ),
+                ),
+              ],
+            );
+          }).toList(),
         ),
       ),
     );
@@ -627,12 +645,6 @@ class DriversListView extends StatelessWidget {
 
   void _openDriverDetails(BuildContext context, Driver driver) {
     context.push(AppRoutes.driverDetails, extra: driver);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Opening details for ${driver.driverName}'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
   }
 
   Widget _buildDriverStatusChips(Driver driver) {
@@ -661,8 +673,7 @@ class DriversListView extends StatelessWidget {
         color: isActive ? color.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color:
-              isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
+          color: isActive ? color.withOpacity(0.3) : Colors.grey.withOpacity(0.3),
         ),
       ),
       child: Row(
@@ -681,6 +692,40 @@ class DriversListView extends StatelessWidget {
               fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(BuildContext context, DriversListState state) {
+    final bloc = context.read<DriversListBloc>();
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Failed to load drivers',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(color: Colors.grey[700]),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            state.errorMessage ?? 'An unexpected error occurred',
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: () => bloc.add(DriversListRefreshed()),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
           ),
         ],
       ),
@@ -775,22 +820,20 @@ class _DriverCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: isMobile ? 24 : 20,
-                    backgroundImage:
-                        driver.profilePicture != null
-                            ? NetworkImage(driver.profilePicture!)
-                            : null,
+                    backgroundImage: driver.profilePicture != null
+                        ? NetworkImage(driver.profilePicture!)
+                        : null,
                     backgroundColor: Colors.blue.withOpacity(0.1),
-                    child:
-                        driver.profilePicture == null
-                            ? Text(
-                              (driver.driverName ?? 'N')[0].toUpperCase(),
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue,
-                                fontSize: isMobile ? 18 : 16,
-                              ),
-                            )
-                            : null,
+                    child: driver.profilePicture == null
+                        ? Text(
+                          (driver.driverName ?? 'N')[0].toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                            fontSize: isMobile ? 18 : 16,
+                          ),
+                        )
+                        : null,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -821,11 +864,10 @@ class _DriverCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
-                      color:
-                          (driver.hasBankDetails == true &&
-                                  driver.mpinSet == true)
-                              ? Colors.green.withOpacity(0.1)
-                              : Colors.orange.withOpacity(0.1),
+                      color: (driver.hasBankDetails == true &&
+                              driver.mpinSet == true)
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.orange.withOpacity(0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -833,11 +875,10 @@ class _DriverCard extends StatelessWidget {
                           ? Icons.check
                           : Icons.warning_amber_rounded,
                       size: 16,
-                      color:
-                          (driver.hasBankDetails == true &&
-                                  driver.mpinSet == true)
-                              ? Colors.green
-                              : Colors.orange,
+                      color: (driver.hasBankDetails == true &&
+                              driver.mpinSet == true)
+                          ? Colors.green
+                          : Colors.orange,
                     ),
                   ),
                 ],
@@ -862,7 +903,8 @@ class _DriverCard extends StatelessWidget {
               const SizedBox(height: 8),
               _buildInfoRow(
                 icon: Icons.qr_code,
-                text: '${driver.uniqueCode} (${driver.uniqueCodeId ?? 'N/A'})',
+                text:
+                    '${driver.uniqueCode} (${driver.uniqueCodeId ?? 'N/A'})',
                 color: Colors.grey[700]!,
               ),
 
@@ -934,10 +976,9 @@ class _DriverCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color:
-            isActive
-                ? activeColor.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.1),
+        color: isActive
+            ? activeColor.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Row(
