@@ -8,7 +8,6 @@ import '../../../core/routes/app_routes.dart';
 import '../../../core/theme/colors.dart';
 import '../../widgets/screen_container.dart';
 import '../bloc/admin_layout_bloc.dart';
-import '../bloc/admin_layout_event.dart';
 import '../bloc/admin_layout_state.dart';
 
 class AdminAppBar extends StatelessWidget {
@@ -42,23 +41,13 @@ class AdminAppBar extends StatelessWidget {
                       previous.isSidebarVisible != current.isSidebarVisible,
               builder: (context, state) {
                 if (state.screenSize == ScreenSize.mobile) {
-                  return Row(
-                    children: [
-                      IconButton(
-                        onPressed:
-                            () => context.read<AdminLayoutBloc>().add(
-                              AdminLayoutSidebarVisibilityToggled(),
-                            ),
-                        icon:
-                            state.isSidebarVisible
-                                ? const Icon(Icons.cancel_outlined)
-                                : const Icon(Icons.menu),
-                        tooltip: 'Toggle Sidebar',
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                  );
-                }
+  return IconButton(
+    onPressed: () {
+      Scaffold.of(context).openDrawer();
+    },
+    icon: const Icon(Icons.menu),
+  );
+}
                 return const SizedBox.shrink();
               },
             ),

@@ -13,6 +13,8 @@ import '../../features/users/driver/bloc/driver_list_bloc/drivers_list_bloc.dart
 import '../../features/users/driver/bloc/driver_details_bloc/driver_details_bloc.dart';
 
 import '../../features/users/driver/repo/driver_repository.dart';
+import '../../features/users/employee/employee_list_bloc/employee_list_bloc.dart';
+import '../../features/users/employee/repo/employee_repository.dart';
 import '../../features/users/student/bloc/student_list_bloc/students_list_bloc.dart';
 import '../../features/users/student/bloc/student_details_bloc/student_detail_bloc.dart';
 
@@ -58,6 +60,10 @@ Future<void> initLocator() async {
     () => StudentRepository(apiClient:  sl<ApiClient>()),
   );
 
+  sl.registerLazySingleton<EmployeeRepository>(
+    () => EmployeeRepository(apiClient:  sl<ApiClient>()),
+  );
+
   sl.registerLazySingleton<RbacRepository>(
     () => MockRbacRepository(sl<Dio>()),
   );
@@ -88,6 +94,8 @@ Future<void> initLocator() async {
 
   sl.registerFactory<StudentsListBloc>(() => StudentsListBloc(studentRepository: sl<StudentRepository>(), storage: sl<LocalStorageService>()));
   sl.registerFactory<StudentDetailBloc>(() => StudentDetailBloc(studentRepository: sl<StudentRepository>(), storage: sl<LocalStorageService>()));
+
+  sl.registerFactory<EmployeesListBloc>(() => EmployeesListBloc(employeeRepository: sl<EmployeeRepository>(), storage: sl<LocalStorageService>()));
 
   sl.registerFactory<RbacBloc>(
     () => RbacBloc(repository: sl<RbacRepository>()),

@@ -1,70 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../../../core/routes/app_routes.dart';
 import '../../../../core/theme/colors.dart';
 import '../../../../shared/widgets/loading_view.dart';
 import '../../../../core/dependencies/injection_container.dart';
-import '../../../../shared/widgets/screen_container.dart';
-import '../bloc/driver_list_bloc/drivers_list_bloc.dart';
-import '../bloc/driver_list_bloc/drivers_list_event.dart';
-import '../bloc/driver_list_bloc/drivers_list_state.dart';
-import '../model/drivers_list_response.dart';
+import '../employee_list_bloc/employee_list_bloc.dart';
+import '../model/employee_list_response.dart';
+
 
 // =============================================================================
-// DRIVERS LIST VIEW - PRODUCTION READY
+// EMPLOYEES LIST VIEW
 // =============================================================================
-/// Uses ResponsiveScreenContainer for proper multi-screen support.
-/// 
-/// Key fixes:
-/// - Loading state checked BEFORE ResponsiveScreenContainer
-/// - All layouts have bounded height constraints
-/// - SafeArea integrated for notch protection
-/// - Proper separation of mobile/tablet/desktop layouts
-/// - No Spacer() usage in cards (replaced with SizedBox)
-/// - Proper error and empty state handling
 
-class DriversListView extends StatelessWidget {
-  const DriversListView({super.key});
+class EmployeesListView extends StatelessWidget {
+  const EmployeesListView({super.key});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return BlocProvider.value(
-      value: sl<DriversListBloc>(),
-      child: BlocListener<DriversListBloc, DriversListState>(
+      value: sl<EmployeesListBloc>(),
+      child: BlocListener<EmployeesListBloc, EmployeesListState>(
         listener: _handleStateChanges,
         child: Scaffold(
           backgroundColor: colorScheme.surface,
-          body: BlocBuilder<DriversListBloc, DriversListState>(
+          body: BlocBuilder<EmployeesListBloc, EmployeesListState>(
             builder: (context, state) {
-              // ✅ IMPORTANT: Check loading/error BEFORE ResponsiveScreenContainer
-              if (state.status == DriversListStatus.loading) {
-                return const LoadingView(title: 'Loading drivers...');
-              }
-
-              // ✅ Use ResponsiveScreenContainer for layout switching
-              return ResponsiveScreenContainer(
-                useSafeArea: true, // ✅ Protects from notches
-                handleOrientationChanges: true, // ✅ Handles rotation
-                showDebugInfo: false, // Set to true to see debug banner
-                
-                // ✅ Each layout is properly bounded
-                mobileLayout: _buildMobileView(context, state),
-                tabletLayout: _buildTabletView(context, state),
-                desktopLayout: _buildDesktopView(context, state),
-                
-                // Fallback (shouldn't be needed, but just in case)
-                child: _buildDesktopView(context, state),
+              return Column(
+                children: [
+                  _buildHeader(context, state),
+                  _buildFilterAndSearch(context, state),
+                  Expanded(child: _buildBody(context, state)),
+                ],
               );
             },
           ),
           floatingActionButton: Builder(
             builder: (context) => FloatingActionButton(
-              onPressed: () =>
-                  context.read<DriversListBloc>().add(DriversListRefreshed()),
+              onPressed: () => context
+                  .read<EmployeesListBloc>()
+                  .add(const EmployeesListRefreshRequested()),
               tooltip: 'Refresh',
               child: const Icon(Icons.refresh),
             ),
@@ -74,61 +50,12 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // RESPONSIVE LAYOUT BUILDERS (Properly Bounded)
-  // ---------------------------------------------------------------------------
-
-  /// Mobile layout: Single column list with compact filters
-  /// ✅ All children have bounded height from ResponsiveScreenContainer
-  Widget _buildMobileView(BuildContext context, DriversListState state) {
-    return Column(
-      children: [
-        _buildHeader(context, state),
-        _buildMobileFilterBar(context, state),
-        // ✅ Expanded provides bounded height for ListView
-        Expanded(
-          child: _buildMobileList(context, state),
-        ),
-      ],
-    );
-  }
-
-  /// Tablet layout: 2-column grid
-  /// ✅ All children have bounded height from ResponsiveScreenContainer
-  Widget _buildTabletView(BuildContext context, DriversListState state) {
-    return Column(
-      children: [
-        _buildHeader(context, state),
-        _buildDesktopFilterBar(context, state),
-        // ✅ Expanded provides bounded height for GridView
-        Expanded(
-          child: _buildTabletGrid(context, state),
-        ),
-      ],
-    );
-  }
-
-  /// Desktop layout: Full DataTable
-  /// ✅ All children have bounded height from ResponsiveScreenContainer
-  Widget _buildDesktopView(BuildContext context, DriversListState state) {
-    return Column(
-      children: [
-        _buildHeader(context, state),
-        _buildDesktopFilterBar(context, state),
-        // ✅ Expanded provides bounded height for table
-        Expanded(
-          child: _buildDesktopTable(context, state),
-        ),
-      ],
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // STATE LISTENERS
-  // ---------------------------------------------------------------------------
-
-  void _handleStateChanges(BuildContext context, DriversListState state) {
-    if (state.errorMessage != null && state.status == DriversListStatus.error) {
+  void _handleStateChanges(
+    BuildContext context,
+    EmployeesListState state,
+  ) {
+    if (state.errorMessage != null &&
+        state.status == EmployeesListStatus.error) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(state.errorMessage!),
@@ -137,29 +64,45 @@ class DriversListView extends StatelessWidget {
           action: SnackBarAction(
             label: 'Retry',
             textColor: Colors.white,
-            onPressed: () =>
-                context.read<DriversListBloc>().add(DriversListRefreshed()),
+            onPressed: () => context
+                .read<EmployeesListBloc>()
+                .add(const EmployeesListRefreshRequested()),
           ),
         ),
       );
     }
   }
 
+  Widget _buildBody(BuildContext context, EmployeesListState state) {
+    if (state.status == EmployeesListStatus.loading) {
+      return const LoadingView(title: 'Loading employees...');
+    }
+    if (state.status == EmployeesListStatus.error) {
+      return _buildErrorState(context, state);
+    }
+    if (state.filteredEmployees.isEmpty) {
+      return _buildEmptyState(context);
+    }
+    return _buildEmployeesList(context, state);
+  }
+
   // ---------------------------------------------------------------------------
-  // HEADER
+  // Header
   // ---------------------------------------------------------------------------
 
-  Widget _buildHeader(BuildContext context, DriversListState state) {
+  Widget _buildHeader(BuildContext context, EmployeesListState state) {
+    final width = MediaQuery.of(context).size.width;
     final colorScheme = Theme.of(context).colorScheme;
-    final isTablet = context.isTablet;
-    final isDesktop = context.isDesktop;
 
     return Container(
-      padding: EdgeInsets.all(isDesktop ? 24 : isTablet ? 20 : 16),
+      padding: EdgeInsets.all(width > 768 ? 24 : 16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outlineVariant, width: 0.2),
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
         ),
       ),
       child: Row(
@@ -169,7 +112,7 @@ class DriversListView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Drivers Management',
+                  'Employees Management',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
@@ -177,7 +120,7 @@ class DriversListView extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${state.filteredDrivers.length} drivers found',
+                  '${state.filteredEmployees.length} employees found',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -185,29 +128,39 @@ class DriversListView extends StatelessWidget {
               ],
             ),
           ),
-          // ✅ Show stats only on tablet/desktop
-          if (isTablet || isDesktop)
-            _buildQuickStats(context, state),
+          if (width > 768) _buildQuickStats(context, state),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStats(BuildContext context, DriversListState state) {
-    final stats = state.driverStats;
+  Widget _buildQuickStats(BuildContext context, EmployeesListState state) {
+    final stats = state.employeeStats;
     return Row(
       children: [
-        _buildStatChip('Total', stats['total'] ?? 0, AppColors.primary),
-        const SizedBox(width: 8),
-        _buildStatChip('Active', stats['active'] ?? 0, AppColors.success),
-        const SizedBox(width: 8),
         _buildStatChip(
-          'Independent',
-          stats['independent'] ?? 0,
-          AppColors.warning,
+          'Total',
+          stats['total'] ?? 0,
+          Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(width: 8),
-        _buildStatChip('Employed', stats['employed'] ?? 0, AppColors.info),
+        _buildStatChip(
+          'Active',
+          stats['active'] ?? 0,
+          AppColors.success,
+        ),
+        const SizedBox(width: 8),
+        _buildStatChip(
+          'Inactive',
+          stats['inactive'] ?? 0,
+          AppColors.error,
+        ),
+        const SizedBox(width: 8),
+        _buildStatChip(
+          'On Leave',
+          stats['on_leave'] ?? 0,
+          AppColors.warning,
+        ),
       ],
     );
   }
@@ -243,124 +196,151 @@ class DriversListView extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // FILTER & SEARCH BARS
+  // Filter & Search Bar
   // ---------------------------------------------------------------------------
 
-  Widget _buildDesktopFilterBar(
+  Widget _buildFilterAndSearch(
     BuildContext context,
-    DriversListState state,
+    EmployeesListState state,
   ) {
+    final width = MediaQuery.of(context).size.width;
     final colorScheme = Theme.of(context).colorScheme;
-    final bloc = context.read<DriversListBloc>();
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: width > 768 ? 24 : 16,
+        vertical: 16,
+      ),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
-          bottom: BorderSide(color: colorScheme.outlineVariant, width: 0.2),
+          bottom: BorderSide(
+            color: colorScheme.outlineVariant,
+            width: 0.2,
+          ),
         ),
       ),
-      child: Row(
-        children: [
-          // Search
-          Expanded(
-            flex: 2,
-            child: TextField(
-              onChanged: (val) =>
-                  bloc.add(DriversListSearchQueryChanged(val)),
-              decoration: InputDecoration(
-                hintText:
-                    'Search by name, email, phone, ID, or employment status...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: colorScheme.surfaceContainer,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+      child: width > 768
+          ? _buildDesktopFilterBar(context, state)
+          : _buildMobileFilterBar(context, state),
+    );
+  }
+
+  Widget _buildDesktopFilterBar(
+    BuildContext context,
+    EmployeesListState state,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final bloc = context.read<EmployeesListBloc>();
+
+    return Row(
+      children: [
+        // Search
+        Expanded(
+          flex: 2,
+          child: TextField(
+            onChanged: (val) =>
+                bloc.add(EmployeesListSearchQueryChanged(val)),
+            decoration: InputDecoration(
+              hintText:
+                  'Search by name, email, phone, department, or designation...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor: colorScheme.surfaceContainer,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+
+        // Filter dropdown
+        _buildDropdownContainer(
+          context: context,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: state.selectedFilter,
+              hint: const Text('Filter'),
+              items: const [
+                DropdownMenuItem(
+                  value: 'all',
+                  child: Text('All Employees'),
                 ),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+                DropdownMenuItem(value: 'active', child: Text('Active')),
+                DropdownMenuItem(value: 'inactive', child: Text('Inactive')),
+                DropdownMenuItem(
+                  value: 'on_leave',
+                  child: Text('On Leave'),
                 ),
-              ),
+                DropdownMenuItem(
+                  value: 'full_time',
+                  child: Text('Full-time'),
+                ),
+                DropdownMenuItem(
+                  value: 'part_time',
+                  child: Text('Part-time'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  bloc.add(EmployeesListFilterChanged(value));
+                }
+              },
             ),
           ),
-          const SizedBox(width: 16),
+        ),
+        const SizedBox(width: 16),
 
-          // Filter dropdown
-          _buildDropdownContainer(
-            context: context,
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: state.selectedFilter,
-                hint: const Text('Filter'),
-                items: const [
-                  DropdownMenuItem(value: 'all', child: Text('All Drivers')),
-                  DropdownMenuItem(
-                    value: 'independent',
-                    child: Text('Independent'),
-                  ),
-                  DropdownMenuItem(value: 'employed', child: Text('Employed')),
-                  DropdownMenuItem(
-                    value: 'employed_status',
-                    child: Text('Has Employment Status'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'no_status',
-                    child: Text('No Status'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    bloc.add(DriversListFilterChanged(value));
-                  }
-                },
-              ),
+        // Sort dropdown
+        _buildDropdownContainer(
+          context: context,
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: state.sortBy,
+              hint: const Text('Sort'),
+              items: const [
+                DropdownMenuItem(value: 'name', child: Text('Name')),
+                DropdownMenuItem(value: 'email', child: Text('Email')),
+                DropdownMenuItem(
+                  value: 'join_date',
+                  child: Text('Join Date'),
+                ),
+                DropdownMenuItem(
+                  value: 'department',
+                  child: Text('Department'),
+                ),
+                DropdownMenuItem(
+                  value: 'designation',
+                  child: Text('Designation'),
+                ),
+              ],
+              onChanged: (value) {
+                if (value != null) {
+                  bloc.add(EmployeesListSortChanged(value));
+                }
+              },
             ),
           ),
-          const SizedBox(width: 16),
+        ),
+        const SizedBox(width: 8),
 
-          // Sort dropdown
-          _buildDropdownContainer(
-            context: context,
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: state.sortBy,
-                hint: const Text('Sort'),
-                items: const [
-                  DropdownMenuItem(value: 'name', child: Text('Name')),
-                  DropdownMenuItem(value: 'email', child: Text('Email')),
-                  DropdownMenuItem(
-                    value: 'created_date',
-                    child: Text('Join Date'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'employment_status',
-                    child: Text('Employment Status'),
-                  ),
-                ],
-                onChanged: (value) {
-                  if (value != null) {
-                    bloc.add(DriversListSortByChanged(value));
-                  }
-                },
-              ),
-            ),
+        // Sort direction toggle
+        IconButton(
+          onPressed: () => bloc.add(EmployeesListSortChanged(state.sortBy)),
+          icon: Icon(
+            state.sortAscending
+                ? Icons.arrow_upward
+                : Icons.arrow_downward,
           ),
-          const SizedBox(width: 8),
-
-          // Sort direction toggle
-          IconButton(
-            onPressed: () =>
-                bloc.add(DriversListSortByChanged(state.sortBy)),
-            icon: Icon(
-              state.sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
-            ),
-            tooltip: state.sortAscending ? 'Ascending' : 'Descending',
-          ),
-        ],
-      ),
+          tooltip: state.sortAscending ? 'Ascending' : 'Descending',
+        ),
+      ],
     );
   }
 
@@ -383,67 +363,100 @@ class DriversListView extends StatelessWidget {
 
   Widget _buildMobileFilterBar(
     BuildContext context,
-    DriversListState state,
+    EmployeesListState state,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    final bloc = context.read<DriversListBloc>();
+    final bloc = context.read<EmployeesListBloc>();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(color: colorScheme.outlineVariant, width: 0.2),
-        ),
-      ),
-      child: Column(
-        children: [
-          TextField(
-            onChanged: (val) =>
-                bloc.add(DriversListSearchQueryChanged(val)),
-            decoration: InputDecoration(
-              hintText: 'Search drivers...',
-              prefixIcon: const Icon(Icons.search),
-              filled: true,
-              fillColor: colorScheme.surfaceContainer,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+    return Column(
+      children: [
+        TextField(
+          onChanged: (val) => bloc.add(EmployeesListSearchQueryChanged(val)),
+          decoration: InputDecoration(
+            hintText: 'Search employees...',
+            prefixIcon: const Icon(Icons.search),
+            filled: true,
+            fillColor: colorScheme.surfaceContainer,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
             ),
           ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                ...bloc.filterOptions.map((filter) {
-                  final isSelected = state.selectedFilter == filter;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(_getFilterDisplayName(filter)),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected) {
-                          bloc.add(DriversListFilterChanged(filter));
-                        }
-                      },
-                      selectedColor:
-                          colorScheme.primary.withOpacity(0.2),
-                      checkmarkColor: colorScheme.primary,
-                    ),
-                  );
-                }),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ...bloc.filterOptions.map((filter) {
+                      final isSelected = state.selectedFilter == filter;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(
+                          label: Text(_getFilterDisplayName(filter)),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            if (selected) {
+                              bloc.add(EmployeesListFilterChanged(filter));
+                            }
+                          },
+                          selectedColor:
+                              colorScheme.primary.withOpacity(0.2),
+                          checkmarkColor: colorScheme.primary,
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              ),
+            ),
+            PopupMenuButton<String>(
+              onSelected: (val) => bloc.add(EmployeesListSortChanged(val)),
+              icon: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.sort),
+                  Icon(
+                    state.sortAscending
+                        ? Icons.arrow_upward
+                        : Icons.arrow_downward,
+                    size: 16,
+                  ),
+                ],
+              ),
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'name',
+                  child: Text('Sort by Name'),
+                ),
+                PopupMenuItem(
+                  value: 'email',
+                  child: Text('Sort by Email'),
+                ),
+                PopupMenuItem(
+                  value: 'join_date',
+                  child: Text('Sort by Join Date'),
+                ),
+                PopupMenuItem(
+                  value: 'department',
+                  child: Text('Sort by Department'),
+                ),
+                PopupMenuItem(
+                  value: 'designation',
+                  child: Text('Sort by Designation'),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -451,14 +464,16 @@ class DriversListView extends StatelessWidget {
     switch (filter) {
       case 'all':
         return 'All';
-      case 'independent':
-        return 'Independent';
-      case 'employed':
-        return 'Employed';
-      case 'employed_status':
-        return 'Has Status';
-      case 'no_status':
-        return 'No Status';
+      case 'active':
+        return 'Active';
+      case 'inactive':
+        return 'Inactive';
+      case 'on_leave':
+        return 'On Leave';
+      case 'full_time':
+        return 'Full-time';
+      case 'part_time':
+        return 'Part-time';
       default:
         return filter.isNotEmpty
             ? '${filter[0].toUpperCase()}${filter.substring(1)}'
@@ -467,22 +482,30 @@ class DriversListView extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // LIST BUILDERS - PROPERLY BOUNDED
+  // Employees List — responsive layout
   // ---------------------------------------------------------------------------
 
-  /// Desktop Table Layout
-  /// ✅ Wrapped in SingleChildScrollView for horizontal scroll if needed
-  Widget _buildDesktopTable(BuildContext context, DriversListState state) {
+  Widget _buildEmployeesList(BuildContext context, EmployeesListState state) {
+    return RefreshIndicator(
+      onRefresh: () async => context
+          .read<EmployeesListBloc>()
+          .add(const EmployeesListRefreshRequested()),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth > 1200) {
+            return _buildDesktopTable(context, state);
+          } else if (constraints.maxWidth > 768) {
+            return _buildTabletGrid(context, state);
+          } else {
+            return _buildMobileList(context, state);
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildDesktopTable(BuildContext context, EmployeesListState state) {
     final colorScheme = Theme.of(context).colorScheme;
-
-    // ✅ Check error and empty states
-    if (state.status == DriversListStatus.error) {
-      return _buildErrorState(context, state);
-    }
-
-    if (state.filteredDrivers.isEmpty) {
-      return _buildEmptyState(context);
-    }
 
     return SingleChildScrollView(
       child: Container(
@@ -508,7 +531,7 @@ class DriversListView extends StatelessWidget {
           columns: [
             DataColumn(
               label: Text(
-                'Driver',
+                'Employee',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -526,7 +549,7 @@ class DriversListView extends StatelessWidget {
             ),
             DataColumn(
               label: Text(
-                'Employment',
+                'Department',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -535,7 +558,7 @@ class DriversListView extends StatelessWidget {
             ),
             DataColumn(
               label: Text(
-                'Type',
+                'Designation',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -544,7 +567,25 @@ class DriversListView extends StatelessWidget {
             ),
             DataColumn(
               label: Text(
-                'Joined',
+                'Employment Type',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Status',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ),
+            DataColumn(
+              label: Text(
+                'Join Date',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: colorScheme.onSurface,
@@ -561,14 +602,14 @@ class DriversListView extends StatelessWidget {
               ),
             ),
           ],
-          rows: state.filteredDrivers.map((driver) {
+          rows: state.filteredEmployees.map((employee) {
             return DataRow(
               cells: [
                 // Name + ID
                 DataCell(
                   Row(
                     children: [
-                      _buildAvatar(driver.name, colorScheme),
+                      _buildAvatar(employee.firstName, colorScheme),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -576,7 +617,9 @@ class DriversListView extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              driver.name ?? 'Unknown',
+                              employee.firstName != null && employee.lastName != null
+                                  ? '${employee.firstName} ${employee.lastName}'
+                                  : 'Unknown Name',
                               style: TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 14,
@@ -585,7 +628,7 @@ class DriversListView extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              'ID: ${driver.id ?? '—'}',
+                              'ID: ${employee.id}',
                               style: TextStyle(
                                 color: colorScheme.onSurfaceVariant,
                                 fontSize: 12,
@@ -605,7 +648,7 @@ class DriversListView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        driver.email ?? 'No email',
+                        employee.email ?? 'No email',
                         style: TextStyle(
                           fontSize: 13,
                           color: colorScheme.onSurface,
@@ -613,7 +656,7 @@ class DriversListView extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        driver.phone ?? 'No phone',
+                        employee.phoneNumber ?? 'No phone',
                         style: TextStyle(
                           color: colorScheme.onSurfaceVariant,
                           fontSize: 12,
@@ -623,18 +666,45 @@ class DriversListView extends StatelessWidget {
                   ),
                 ),
 
-                // Employment status chip
+                // Department
                 DataCell(
-                  _buildEmploymentStatusChip(driver.employmentStatus),
+                  Text(
+                    employee.departmentName ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
                 ),
 
-                // Independent / Employed badge
-                DataCell(_buildTypeBadge(driver.isIndependent)),
+                // Designation
+                DataCell(
+                  Text(
+                    employee.designation ?? 'N/A',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+
+                // Employment Type
+                DataCell(
+                  _buildEmploymentTypeChip(
+                    employee.employmentType,
+                    colorScheme,
+                  ),
+                ),
+
+                // Status chip
+                DataCell(
+                  _buildStatusChip(employee.status, colorScheme),
+                ),
 
                 // Join date
                 DataCell(
                   Text(
-                    _formatDate(driver.createdAt),
+                    _formatDate(employee.joinDate),
                     style: TextStyle(color: colorScheme.onSurface),
                   ),
                 ),
@@ -642,7 +712,8 @@ class DriversListView extends StatelessWidget {
                 // Actions
                 DataCell(
                   ElevatedButton.icon(
-                    onPressed: () => _openDriverDetails(context, driver),
+                    onPressed: () =>
+                        _openEmployeeDetails(context, employee),
                     icon: const Icon(Icons.visibility, size: 16),
                     label: const Text('View'),
                     style: ElevatedButton.styleFrom(
@@ -661,83 +732,60 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  /// Tablet Grid Layout
-  /// ✅ GridView automatically handles bounded constraints
-  Widget _buildTabletGrid(BuildContext context, DriversListState state) {
-    // ✅ Check error and empty states
-    if (state.status == DriversListStatus.error) {
-      return _buildErrorState(context, state);
-    }
-
-    if (state.filteredDrivers.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async =>
-          context.read<DriversListBloc>().add(DriversListRefreshed()),
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 1.0,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-        ),
-        itemCount: state.filteredDrivers.length,
-        itemBuilder: (context, index) {
-          final driver = state.filteredDrivers[index];
-          return _DriverCard(
-            driver: driver,
-            onTap: () => _openDriverDetails(context, driver),
-          );
-        },
+  Widget _buildTabletGrid(BuildContext context, EmployeesListState state) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
       ),
+      itemCount: state.filteredEmployees.length,
+      itemBuilder: (context, index) {
+        final employee = state.filteredEmployees[index];
+        return _EmployeeCard(
+          employee: employee,
+          onTap: () => _openEmployeeDetails(context, employee),
+        );
+      },
     );
   }
 
-  /// Mobile List Layout
-  /// ✅ ListView automatically handles bounded constraints
-  Widget _buildMobileList(BuildContext context, DriversListState state) {
-    // ✅ Check error and empty states
-    if (state.status == DriversListStatus.error) {
-      return _buildErrorState(context, state);
-    }
-
-    if (state.filteredDrivers.isEmpty) {
-      return _buildEmptyState(context);
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async =>
-          context.read<DriversListBloc>().add(DriversListRefreshed()),
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: state.filteredDrivers.length,
-        itemBuilder: (context, index) {
-          final driver = state.filteredDrivers[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: _DriverCard(
-              driver: driver,
-              onTap: () => _openDriverDetails(context, driver),
-              isMobile: true,
-            ),
-          );
-        },
-      ),
+  Widget _buildMobileList(BuildContext context, EmployeesListState state) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.filteredEmployees.length,
+      itemBuilder: (context, index) {
+        final employee = state.filteredEmployees[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: _EmployeeCard(
+            employee: employee,
+            onTap: () => _openEmployeeDetails(context, employee),
+            isMobile: true,
+          ),
+        );
+      },
     );
   }
 
-  void _openDriverDetails(BuildContext context, Item driver) {
-    context.push(AppRoutes.driverDetails, extra: driver);
+  void _openEmployeeDetails(BuildContext context, Datum employee) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Opening details for ${employee.firstName} ${employee.lastName}...'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    // Implement navigation when employee details route is ready
+    // context.push(AppRoutes.employeeDetails, extra: employee);
   }
 
   // ---------------------------------------------------------------------------
-  // ERROR & EMPTY STATES
+  // Empty / Error states
   // ---------------------------------------------------------------------------
 
-  Widget _buildErrorState(BuildContext context, DriversListState state) {
+  Widget _buildErrorState(BuildContext context, EmployeesListState state) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Center(
@@ -747,7 +795,7 @@ class DriversListView extends StatelessWidget {
           Icon(Icons.error_outline, size: 64, color: colorScheme.error),
           const SizedBox(height: 16),
           Text(
-            'Failed to load drivers',
+            'Failed to load employees',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: colorScheme.onSurface,
             ),
@@ -762,8 +810,9 @@ class DriversListView extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () =>
-                context.read<DriversListBloc>().add(DriversListRefreshed()),
+            onPressed: () => context
+                .read<EmployeesListBloc>()
+                .add(const EmployeesListRefreshRequested()),
             icon: const Icon(Icons.refresh),
             label: const Text('Retry'),
           ),
@@ -774,7 +823,7 @@ class DriversListView extends StatelessWidget {
 
   Widget _buildEmptyState(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final bloc = context.read<DriversListBloc>();
+    final bloc = context.read<EmployeesListBloc>();
 
     return Center(
       child: Column(
@@ -787,7 +836,7 @@ class DriversListView extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text(
-            'No drivers found',
+            'No employees found',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: colorScheme.onSurface,
             ),
@@ -803,8 +852,8 @@ class DriversListView extends StatelessWidget {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              bloc.add(const DriversListSearchQueryChanged(''));
-              bloc.add(const DriversListFilterChanged('all'));
+              bloc.add(const EmployeesListSearchQueryChanged(''));
+              bloc.add(const EmployeesListFilterChanged('all'));
             },
             icon: const Icon(Icons.clear_all),
             label: const Text('Clear Filters'),
@@ -815,7 +864,7 @@ class DriversListView extends StatelessWidget {
   }
 
   // ---------------------------------------------------------------------------
-  // SHARED HELPERS
+  // Shared helpers
   // ---------------------------------------------------------------------------
 
   Widget _buildAvatar(String? name, ColorScheme colorScheme) {
@@ -832,24 +881,9 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  Widget _buildEmploymentStatusChip(String? status) {
-    final label = status != null
-        ? status[0].toUpperCase() + status.substring(1).toLowerCase()
-        : 'Unknown';
-
-    final Color color;
-    switch (status?.toLowerCase()) {
-      case 'employed':
-      case 'active':
-        color = AppColors.success;
-        break;
-      case 'unemployed':
-      case 'inactive':
-        color = AppColors.error;
-        break;
-      default:
-        color = AppColors.info;
-    }
+  Widget _buildStatusChip(String? status, ColorScheme colorScheme) {
+    final label = status ?? 'Unknown';
+    final color = _getStatusColor(status);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -869,12 +903,11 @@ class DriversListView extends StatelessWidget {
     );
   }
 
-  Widget _buildTypeBadge(bool? isIndependent) {
-    final isInd = isIndependent == true;
-    final color = isInd ? AppColors.warning : AppColors.info;
-    final label = isInd ? 'Independent' : 'Employed';
-    final icon =
-        isInd ? Icons.person_outline : Icons.business_center_outlined;
+  Widget _buildEmploymentTypeChip(String? type, ColorScheme colorScheme) {
+    final label = type ?? 'N/A';
+    final color = type?.toLowerCase() == 'full-time'
+        ? AppColors.success
+        : AppColors.info;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -883,22 +916,28 @@ class DriversListView extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return AppColors.success;
+      case 'inactive':
+        return AppColors.error;
+      case 'on leave':
+        return AppColors.warning;
+      default:
+        return AppColors.info;
+    }
   }
 
   String _formatDate(DateTime? date) {
@@ -915,16 +954,16 @@ class DriversListView extends StatelessWidget {
 }
 
 // =============================================================================
-// DRIVER CARD COMPONENT - FIXED
+// EMPLOYEE CARD COMPONENT
 // =============================================================================
 
-class _DriverCard extends StatelessWidget {
-  final Item driver;
+class _EmployeeCard extends StatelessWidget {
+  final Datum employee;
   final VoidCallback onTap;
   final bool isMobile;
 
-  const _DriverCard({
-    required this.driver,
+  const _EmployeeCard({
+    required this.employee,
     required this.onTap,
     this.isMobile = false,
   });
@@ -932,7 +971,6 @@ class _DriverCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isIndependent = driver.isIndependent == true;
 
     return Card(
       elevation: 2,
@@ -947,14 +985,14 @@ class _DriverCard extends StatelessWidget {
             // ✅ FIXED: Use mainAxisSize.min to prevent flex issues
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Avatar + name + status indicator
+              // Avatar + name + ID
               Row(
                 children: [
                   CircleAvatar(
                     radius: isMobile ? 24 : 20,
                     backgroundColor: colorScheme.primaryContainer,
                     child: Text(
-                      (driver.name ?? 'N')[0].toUpperCase(),
+                      (employee.firstName ?? 'N')[0].toUpperCase(),
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.primary,
@@ -968,7 +1006,9 @@ class _DriverCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          driver.name ?? 'Unknown Driver',
+                          employee.firstName != null && employee.lastName != null
+                              ? '${employee.firstName} ${employee.lastName}'
+                              : 'Unknown Name',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: isMobile ? 16 : 14,
@@ -979,7 +1019,7 @@ class _DriverCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          'ID: ${driver.id ?? '—'}',
+                          'ID: ${employee.id}',
                           style: TextStyle(
                             color: colorScheme.onSurfaceVariant,
                             fontSize: 12,
@@ -988,71 +1028,59 @@ class _DriverCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Independent / employed indicator
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: isIndependent
-                          ? AppColors.warning.withOpacity(0.1)
-                          : AppColors.info.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isIndependent
-                          ? Icons.person_outline
-                          : Icons.business_center_outlined,
-                      size: 16,
-                      color: isIndependent
-                          ? AppColors.warning
-                          : AppColors.info,
-                    ),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Divider(color: colorScheme.outlineVariant, height: 1),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Contact info
               _buildInfoRow(
                 icon: Icons.email_outlined,
-                text: driver.email ?? 'No email',
+                text: employee.email ?? 'No email',
                 colorScheme: colorScheme,
               ),
               const SizedBox(height: 8),
               _buildInfoRow(
                 icon: Icons.phone_outlined,
-                text: driver.phone ?? 'No phone',
+                text: employee.phoneNumber ?? 'No phone',
                 colorScheme: colorScheme,
               ),
-              if (driver.createdAt != null) ...[
-                const SizedBox(height: 8),
-                _buildInfoRow(
-                  icon: Icons.calendar_today_outlined,
-                  text: 'Joined: ${_formatDate(driver.createdAt)}',
-                  colorScheme: colorScheme,
-                ),
-              ],
+              const SizedBox(height: 8),
+              _buildInfoRow(
+                icon: Icons.business_outlined,
+                text: employee.departmentName ?? 'N/A',
+                colorScheme: colorScheme,
+              ),
+              const SizedBox(height: 8),
+              _buildInfoRow(
+                icon: Icons.work_outline,
+                text: employee.designation ?? 'N/A',
+                colorScheme: colorScheme,
+              ),
 
-              // ✅ FIXED: Use SizedBox instead of Spacer (no flex issues)
-              const SizedBox(height: 16),
-
+        
               // Status chips
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
                 children: [
                   _buildCardStatusChip(
-                    isIndependent ? 'Independent' : 'Employed',
-                    isIndependent ? AppColors.warning : AppColors.info,
+                    employee.status ?? 'Unknown',
+                    _getStatusColor(employee.status),
                   ),
-                  if (driver.employmentStatus != null)
-                    _buildCardStatusChip(
-                      driver.employmentStatus![0].toUpperCase() +
-                          driver.employmentStatus!.substring(1).toLowerCase(),
-                      AppColors.success,
-                    ),
+                  _buildCardStatusChip(
+                    employee.employmentType ?? 'N/A',
+                    employee.employmentType?.toLowerCase() == 'full-time'
+                        ? AppColors.success
+                        : AppColors.info,
+                  ),
                 ],
               ),
 
@@ -1065,7 +1093,7 @@ class _DriverCard extends StatelessWidget {
                   onPressed: onTap,
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: colorScheme.primary,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1093,7 +1121,10 @@ class _DriverCard extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 13),
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 13,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -1125,6 +1156,19 @@ class _DriverCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(String? status) {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return AppColors.success;
+      case 'inactive':
+        return AppColors.error;
+      case 'on leave':
+        return AppColors.warning;
+      default:
+        return AppColors.info;
+    }
   }
 
   String _formatDate(DateTime? date) {

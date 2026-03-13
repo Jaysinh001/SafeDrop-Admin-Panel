@@ -165,7 +165,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildMobileLayout() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -201,7 +201,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildTabletLayout() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: SingleChildScrollView(
         child: AnimatedBuilder(
@@ -249,7 +249,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   Widget _buildDesktopLayout() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Row(
       children: [
         Expanded(
@@ -259,10 +259,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  colorScheme.primary,
-                  AppColors.primaryLight,
-                ],
+                colors: [colorScheme.primary, AppColors.primaryLight],
               ),
             ),
             child: AnimatedBuilder(
@@ -281,8 +278,9 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                       const SizedBox(height: 24),
                       Text(
                         'Admin Dashboard',
-                        style: Theme.of(context).textTheme.headlineMedium
-                            ?.copyWith(
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                         ),
@@ -290,9 +288,8 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                       const SizedBox(height: 12),
                       Text(
                         'Manage your application with ease',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Colors.white.withOpacity(0.8),
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(color: Colors.white.withOpacity(0.8)),
                         textAlign: TextAlign.center,
                       ),
                     ],
@@ -379,7 +376,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   Widget _buildTitle(String text) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    
+
     return Text(
       text,
       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
@@ -392,19 +389,19 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildSubtitle(String text) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Text(
       text,
-      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-        color: colorScheme.onSurfaceVariant,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.bodyLarge?.copyWith(color: colorScheme.onSurfaceVariant),
       textAlign: TextAlign.center,
     );
   }
 
   Widget _buildLoginForm() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Form(
       key: formKey,
       child: Column(
@@ -472,7 +469,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildEmailField() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return TextFormField(
       controller: emailController,
       keyboardType: TextInputType.emailAddress,
@@ -490,7 +487,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildPasswordField() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen:
           (previous, current) =>
@@ -527,7 +524,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildRememberMeCheckbox() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen:
           (previous, current) => previous.rememberMe != current.rememberMe,
@@ -544,10 +541,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                 borderRadius: BorderRadius.circular(4),
               ),
             ),
-            Text(
-              'Remember me',
-              style: TextStyle(color: colorScheme.onSurface),
-            ),
+            Text('Remember me', style: TextStyle(color: colorScheme.onSurface)),
           ],
         );
       },
@@ -556,7 +550,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildLoginButton() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return BlocBuilder<LoginBloc, LoginState>(
       buildWhen: (previous, current) => previous.isLoading != current.isLoading,
       builder: (context, state) {
@@ -585,10 +579,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
                   )
                   : const Text(
                     'Sign In',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
         );
       },
@@ -597,7 +588,7 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildForgotPasswordLink() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return TextButton(
       onPressed: _forgotPassword,
       child: Text(

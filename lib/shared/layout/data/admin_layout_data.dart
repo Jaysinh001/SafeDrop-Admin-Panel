@@ -198,7 +198,7 @@ class AdminNavigationItems {
           id: 14,
           title: 'Employees',
           icon: Icons.badge_rounded,
-          route: '/users/employees',
+          route: AppRoutes.employeesList,
           breadcrumbs: ['Home', 'Users', 'Employees'],
         ),
         NavigationItem(
@@ -225,7 +225,7 @@ class AdminNavigationItems {
           id: 21,
           title: 'Roles',
           icon: Icons.manage_accounts_rounded,
-          route: '/rbac/roles',
+          route: AppRoutes.rbac,
           breadcrumbs: ['Home', 'Roles & Permissions', 'Roles'],
         ),
         NavigationItem(

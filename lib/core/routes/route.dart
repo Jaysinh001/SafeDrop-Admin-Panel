@@ -11,6 +11,7 @@ import '../../features/splash/view/splash_screen.dart';
 import '../../features/subscription_plan/view/subscription_view.dart';
 import '../../features/users/driver/view/drivers_list_view.dart';
 import '../../features/users/driver/view/driver_detail_view.dart';
+import '../../features/users/employee/view/employee_list_view.dart';
 import '../../features/users/student/view/student_detail_view.dart';
 import '../../features/users/student/view/students_list_view.dart';
 import '../../features/finance/withdrawal/view/withdrawal_request_view.dart';
@@ -80,6 +81,10 @@ class AppPages {
           GoRoute(
             path: AppRoutes.studentDetails,
             builder: (context, state) => const StudentDetailsView(),
+          ),
+          GoRoute(
+            path: AppRoutes.employeesList,
+            builder: (context, state) => const EmployeesListView(),
           ),
           GoRoute(
             path: AppRoutes.organizationProfile,

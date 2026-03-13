@@ -27,18 +27,19 @@ class AdminSideBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.sidebarBackground, Color(0xFF0f172a)],
-        ),
+      decoration: BoxDecoration(
+        color: isDark 
+          ? AppColors.darkSidebarBackground 
+          : AppColors.sidebarBackground,
         boxShadow: [
           BoxShadow(
-            color: AppColors.shadow,
+            color: colorScheme.shadow.withOpacity(0.1),
             blurRadius: 10,
-            offset: Offset(2, 0),
+            offset: const Offset(2, 0),
           ),
         ],
       ),
@@ -67,6 +68,9 @@ class AdminSideBar extends StatelessWidget {
   }
 
   Widget _buildLogoHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       height: 80,
       padding: const EdgeInsets.all(16),
@@ -76,12 +80,17 @@ class AdminSideBar extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: LinearGradient(
+                colors: [
+                  colorScheme.primary,
+                  isDark ? AppColors.primaryLight : AppColors.primaryDark,
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.admin_panel_settings,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               size: 24,
             ),
           ),
@@ -95,14 +104,18 @@ class AdminSideBar extends StatelessWidget {
                   Text(
                     'Admin Panel',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.sidebarSelectedText,
+                      color: isDark 
+                        ? AppColors.darkSidebarActiveText 
+                        : AppColors.sidebarSelectedText,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
                     'v1.0.0',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.sidebarText,
+                      color: isDark 
+                        ? AppColors.darkSidebarText 
+                        : AppColors.sidebarText,
                     ),
                   ),
                 ],
@@ -115,6 +128,8 @@ class AdminSideBar extends StatelessWidget {
   }
 
   Widget _buildNavigationItem(BuildContext context, NavigationItem item) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = currentPageIndex == item.id;
     final hasSubItems = item.subItems != null && item.subItems!.isNotEmpty;
 
@@ -122,8 +137,18 @@ class AdminSideBar extends StatelessWidget {
       return _buildExpandableNavigationItem(context, item, isSelected);
     }
 
+    final selectedBgColor = isDark 
+      ? AppColors.darkSidebarSelected 
+      : AppColors.sidebarSelectedItem;
+    final selectedTextColor = isDark 
+      ? AppColors.darkSidebarActiveText 
+      : AppColors.sidebarSelectedText;
+    final unselectedTextColor = isDark 
+      ? AppColors.darkSidebarText 
+      : AppColors.sidebarText;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
@@ -139,10 +164,7 @@ class AdminSideBar extends StatelessWidget {
           child: Container(
             height: 48,
             decoration: BoxDecoration(
-              color:
-                  isSelected
-                      ? AppColors.sidebarSelectedItem
-                      : Colors.transparent,
+              color: isSelected ? selectedBgColor : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -150,10 +172,7 @@ class AdminSideBar extends StatelessWidget {
                 const SizedBox(width: 16),
                 Icon(
                   item.icon,
-                  color:
-                      isSelected
-                          ? AppColors.sidebarSelectedText
-                          : AppColors.sidebarText,
+                  color: isSelected ? selectedTextColor : unselectedTextColor,
                   size: 20,
                 ),
                 if (isExpanded) ...[
@@ -162,10 +181,7 @@ class AdminSideBar extends StatelessWidget {
                     child: Text(
                       item.title,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color:
-                            isSelected
-                                ? AppColors.sidebarSelectedText
-                                : AppColors.sidebarText,
+                        color: isSelected ? selectedTextColor : unselectedTextColor,
                         fontWeight:
                             isSelected ? FontWeight.w600 : FontWeight.w400,
                       ),
@@ -178,13 +194,13 @@ class AdminSideBar extends StatelessWidget {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.error,
+                        color: colorScheme.error,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         item.badge!,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.onError,
+                          color: colorScheme.onError,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -204,11 +220,19 @@ class AdminSideBar extends StatelessWidget {
     NavigationItem item,
     bool isSelected,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final selectedTextColor = isDark 
+      ? AppColors.darkSidebarActiveText 
+      : AppColors.sidebarSelectedText;
+    final unselectedTextColor = isDark 
+      ? AppColors.darkSidebarText 
+      : AppColors.sidebarText;
+    
     return ExpansionTile(
       leading: Icon(
         item.icon,
-        color:
-            isSelected ? AppColors.sidebarSelectedText : AppColors.sidebarText,
+        color: isSelected ? selectedTextColor : unselectedTextColor,
         size: 20,
       ),
       title:
@@ -216,16 +240,13 @@ class AdminSideBar extends StatelessWidget {
               ? Text(
                 item.title,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color:
-                      isSelected
-                          ? AppColors.sidebarSelectedText
-                          : AppColors.sidebarText,
+                  color: isSelected ? selectedTextColor : unselectedTextColor,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),
               )
               : const SizedBox(),
-      iconColor: AppColors.sidebarText,
-      collapsedIconColor: AppColors.sidebarText,
+      iconColor: unselectedTextColor,
+      collapsedIconColor: unselectedTextColor,
       backgroundColor: Colors.transparent,
       collapsedBackgroundColor: Colors.transparent,
       children:
@@ -241,18 +262,35 @@ class AdminSideBar extends StatelessWidget {
   }
 
   Widget _buildSidebarFooter(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final footerTextColor = isDark 
+      ? AppColors.darkSidebarText 
+      : AppColors.sidebarText;
+    final hoverBgColor = isDark 
+      ? AppColors.darkSidebarSelected 
+      : AppColors.sidebarHoverItem;
+    
     return Container(
       padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(
+            color: colorScheme.outlineVariant.withOpacity(0.2),
+            width: 0.5,
+          ),
+        ),
+      ),
       child: Row(
         children: [
-          if (screenSize != ScreenSize.mobile)
+          // if (screenSize != ScreenSize.mobile)
             IconButton(
               onPressed: onToggleExpansion,
               icon: Icon(
                 isExpanded
                     ? Icons.keyboard_arrow_left
                     : Icons.keyboard_arrow_right,
-                color: AppColors.sidebarText,
+                color: footerTextColor,
               ),
               tooltip: isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar',
             ),
@@ -261,14 +299,14 @@ class AdminSideBar extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.sidebarHoverItem,
+                color: hoverBgColor,
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 'Admin User',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.sidebarText),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: footerTextColor,
+                ),
               ),
             ),
           ],

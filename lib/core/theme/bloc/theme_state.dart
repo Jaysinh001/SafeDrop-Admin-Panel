@@ -20,15 +20,13 @@ class ThemeState extends Equatable {
     this.status = ThemeLoadStatus.initial,
   });
 
-  ThemeState copyWith({
-    ThemeMode? themeMode,
-    ThemeLoadStatus? status,
-  }) => ThemeState(
-    themeMode: themeMode ?? this.themeMode,
-    status: status ?? this.status,
- );
+  ThemeState copyWith({ThemeMode? themeMode, ThemeLoadStatus? status}) =>
+      ThemeState(
+        themeMode: themeMode ?? this.themeMode,
+        status: status ?? this.status,
+      );
 
-   /// Returns `true` when the effective theme is dark.
+  /// Returns `true` when the effective theme is dark.
   /// Resolves [ThemeMode.system] against the device brightness.
   bool get isDark {
     if (themeMode == ThemeMode.dark) return true;

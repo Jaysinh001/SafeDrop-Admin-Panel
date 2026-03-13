@@ -879,6 +879,8 @@ class _StudentCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            // ✅ FIXED: Use mainAxisSize.min to prevent flex issues
+            mainAxisSize: MainAxisSize.min,
             children: [
               // Avatar + name + ID row
               Row(
@@ -963,8 +965,6 @@ class _StudentCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
-
-              const Spacer(),
 
               // Enrollment status chip
               _buildEnrollmentStatusChip(student.enrollmentStatus),

@@ -82,7 +82,7 @@ class DashboardView extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                'Welcome back! Here\'s what\'s happening with your store today.',
+                'Welcome back! Here\'s what\'s happening with your organization today.',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
