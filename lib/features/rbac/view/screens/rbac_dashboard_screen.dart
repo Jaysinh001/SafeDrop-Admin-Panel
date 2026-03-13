@@ -370,13 +370,15 @@ class _RbacDashboardScreenState extends State<RbacDashboardScreen>
     RbacState state, {
     bool isListView = false,
   }) {
-    if (state.isLoadingGroups)
+    if (state.isLoadingGroups) {
       return const Center(child: CircularProgressIndicator());
-    if (state.groups.isEmpty)
+    }
+    if (state.groups.isEmpty) {
       return _buildEmptyState(
         'No groups found',
         () => _showCreateGroup(context),
       );
+    }
 
     return Column(
       children: [
@@ -427,10 +429,12 @@ class _RbacDashboardScreenState extends State<RbacDashboardScreen>
     RbacState state, {
     bool isListView = false,
   }) {
-    if (state.isLoadingRoles)
+    if (state.isLoadingRoles) {
       return const Center(child: CircularProgressIndicator());
-    if (state.roles.isEmpty)
+    }
+    if (state.roles.isEmpty) {
       return _buildEmptyState('No roles found', () => _showCreateRole(context));
+    }
 
     return Column(
       children: [
@@ -479,8 +483,9 @@ class _RbacDashboardScreenState extends State<RbacDashboardScreen>
     RbacState state, {
     bool isListView = false,
   }) {
-    if (state.isLoadingMembers)
+    if (state.isLoadingMembers) {
       return const Center(child: CircularProgressIndicator());
+    }
 
     return Column(
       children: [
@@ -534,16 +539,19 @@ class _RbacDashboardScreenState extends State<RbacDashboardScreen>
   Widget _buildDetailPanel(BuildContext context, RbacState state) {
     switch (_selectedNavIndex) {
       case 0:
-        if (state.selectedGroup == null)
+        if (state.selectedGroup == null) {
           return const Center(child: Text('Select a group to view details'));
+        }
         return _buildGroupDetail(context, state);
       case 1:
-        if (state.selectedRole == null)
+        if (state.selectedRole == null) {
           return const Center(child: Text('Select a role to view details'));
+        }
         return _buildRoleDetail(context, state);
       case 2:
-        if (state.selectedMember == null)
+        if (state.selectedMember == null) {
           return const Center(child: Text('Select a member to view details'));
+        }
         return const MemberPermissionDetailScreen(isPanel: true);
       default:
         return const Center(child: Text('Select an item'));

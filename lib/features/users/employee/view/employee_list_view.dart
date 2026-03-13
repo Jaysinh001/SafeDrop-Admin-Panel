@@ -1171,15 +1171,15 @@ class _EmployeeCard extends StatelessWidget {
     }
   }
 
-  String _formatDate(DateTime? date) {
-    if (date == null) return 'N/A';
-    final now = DateTime.now();
-    final difference = now.difference(date);
-    if (difference.inDays == 0) return 'Today';
-    if (difference.inDays == 1) return 'Yesterday';
-    if (difference.inDays < 30) return '${difference.inDays}d ago';
-    return '${date.day.toString().padLeft(2, '0')}/'
-        '${date.month.toString().padLeft(2, '0')}/'
-        '${date.year}';
-  }
+  // String _formatDate(DateTime? date) {
+  //   if (date == null) return 'N/A';
+  //   final now = DateTime.now();
+  //   final difference = now.difference(date);
+  //   if (difference.inDays == 0) return 'Today';
+  //   if (difference.inDays == 1) return 'Yesterday';
+  //   if (difference.inDays < 30) return '${difference.inDays}d ago';
+  //   return '${date.day.toString().padLeft(2, '0')}/'
+  //       '${date.month.toString().padLeft(2, '0')}/'
+  //       '${date.year}';
+  // }
 }

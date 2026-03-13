@@ -107,8 +107,9 @@ class RbacState extends Equatable {
   }
 
   List<PermissionModel> get filteredPermissions {
-    if (selectedModuleFilter == null || selectedModuleFilter == 'All')
+    if (selectedModuleFilter == null || selectedModuleFilter == 'All') {
       return allPermissions;
+    }
     return allPermissions
         .where((p) => p.module == selectedModuleFilter)
         .toList();

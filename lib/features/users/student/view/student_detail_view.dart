@@ -9,7 +9,6 @@ import '../bloc/student_details_bloc/student_detail_bloc.dart';
 import '../bloc/student_details_bloc/student_detail_event.dart';
 import '../bloc/student_details_bloc/student_detail_state.dart';
 import '../model/student_details_response.dart';
-import '../model/students_list_response.dart' as slr;
 
 // =============================================================================
 // STUDENT DETAILS VIEW
@@ -1857,7 +1856,7 @@ class _DuePaymentsTab extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
-                  value: selectedStatus,
+                  initialValue: selectedStatus,
                   decoration: const InputDecoration(
                     labelText: 'Status',
                     border: OutlineInputBorder(),

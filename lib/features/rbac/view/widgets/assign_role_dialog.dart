@@ -30,7 +30,7 @@ class _AssignRoleDialogState extends State<AssignRoleDialog> {
           const Text('Select a member to assign this role:'),
           const SizedBox(height: 16),
           DropdownButtonFormField<OrgMemberModel>(
-            value: _selectedMember,
+            initialValue: _selectedMember,
             items:
                 widget.members
                     .map((m) => DropdownMenuItem(value: m, child: Text(m.name)))

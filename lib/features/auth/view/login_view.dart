@@ -164,7 +164,6 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildMobileLayout() {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -200,7 +199,6 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
   }
 
   Widget _buildTabletLayout() {
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Center(
       child: SingleChildScrollView(
@@ -248,7 +246,6 @@ class _LoginViewStatefulState extends State<_LoginViewStateful>
 
   Widget _buildDesktopLayout() {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Row(
       children: [

@@ -15,8 +15,9 @@ class MemberPermissionDetailScreen extends StatelessWidget {
     return BlocBuilder<RbacBloc, RbacState>(
       builder: (context, state) {
         final member = state.selectedMember;
-        if (member == null)
+        if (member == null) {
           return const Center(child: Text('No member selected'));
+        }
 
         return Scaffold(
           appBar:

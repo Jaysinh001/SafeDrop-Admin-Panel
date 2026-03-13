@@ -161,7 +161,7 @@ class _SnackbarSizing {
   static const double closeIconSize = 16.0;
 
   // Durations
-  static const Duration short = Duration(seconds: 3);
+  // static const Duration short = Duration(seconds: 3);
   static const Duration medium = Duration(seconds: 5);
   static const Duration long = Duration(seconds: 8);
   static const Duration animIn = Duration(milliseconds: 280);

@@ -171,8 +171,8 @@ final List<Announcement> _mockAnnouncements = [
 // =============================================================================
 
 const _filterOptions   = ['all', 'published', 'draft', 'expired', 'pinned'];
-const _priorityOptions = ['all', 'urgent', 'high', 'normal', 'low'];
-const _targetOptions   = ['all', 'all_users', 'route', 'role', 'group'];
+// const _priorityOptions = ['all', 'urgent', 'high', 'normal', 'low'];
+// const _targetOptions   = ['all', 'all_users', 'route', 'role', 'group'];
 
 // =============================================================================
 // INTERNAL STATE

@@ -30,7 +30,7 @@ class _AssignGroupDialogState extends State<AssignGroupDialog> {
           const Text('Select a member to assign to this group:'),
           const SizedBox(height: 16),
           DropdownButtonFormField<OrgMemberModel>(
-            value: _selectedMember,
+            initialValue: _selectedMember,
             items:
                 widget.members
                     .map((m) => DropdownMenuItem(value: m, child: Text(m.name)))

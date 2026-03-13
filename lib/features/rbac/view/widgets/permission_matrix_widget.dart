@@ -218,7 +218,7 @@ class _PermissionMatrixWidgetState extends State<PermissionMatrixWidget> {
                       ],
                     ),
                   ),
-                  ...perms.map((p) => _buildPermissionRow(p)).toList(),
+                  ...perms.map((p) => _buildPermissionRow(p)),
                 ],
               );
             },

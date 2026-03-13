@@ -29,7 +29,7 @@ import '../../../../core/theme/theme.dart';
 // =============================================================================
 
 class _OrgMock {
-  static const id = 1;
+  // static const id = 1;
   static const name = 'Sunrise University';
   static const code = 'SUNRISE-2024';
   static const type = 'university';
@@ -45,7 +45,7 @@ class _OrgMock {
   // Subscription
   static const planName = 'Pro';
   static const planPrice = '₹4,999 / month';
-  static const planStatus = 'active';
+  // static const planStatus = 'active';
   static const planStart = '01 Jan 2025';
   static const planEnd = '31 Dec 2025';
   static const List<String> planFeatures = [
@@ -64,7 +64,7 @@ class _OrgMock {
   static const walletHeld = 15_000.00;
   static const walletCredited = 12_45_000.00;
   static const walletDebited = 9_96_500.00;
-  static const currency = 'INR';
+  // static const currency = 'INR';
 
   // Quick stats
   static const totalMembers = 432;

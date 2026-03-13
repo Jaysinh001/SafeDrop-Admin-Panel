@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'rbac_repository.dart';
 import '../models/permission_model.dart';
 import '../models/permission_group_model.dart';
@@ -7,7 +6,7 @@ import '../models/role_model.dart';
 import '../models/org_member_model.dart';
 
 class MockRbacRepository extends RbacRepository {
-  MockRbacRepository(Dio dio) : super(dio);
+  MockRbacRepository(super.dio);
 
   final List<PermissionModel> _mockPermissions = [
     // Dashboard & Analytics

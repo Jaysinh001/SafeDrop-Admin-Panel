@@ -8,7 +8,6 @@ import '../bloc/driver_details_bloc/driver_details_bloc.dart';
 import '../bloc/driver_details_bloc/driver_details_event.dart';
 import '../bloc/driver_details_bloc/driver_details_state.dart';
 import '../model/driver_details_response.dart';
-import '../model/drivers_list_response.dart' as dlr;
 
 // =============================================================================
 // DRIVER DETAILS VIEW
@@ -54,7 +53,7 @@ class _DriverDetailsViewState extends State<DriverDetailsView> with SingleTicker
   @override
   Widget build(BuildContext context) {
     int driverId = 0;
-    final args = widget.arguments;
+    // final args = widget.arguments;
     // if (args is dlr.Driver) {
     //   driverId = args.id ?? 0;
     // } else if (args is Map && args['id'] != null) {

@@ -1,7 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/data/local_storage/local_storage_service.dart';
-import '../../model/driver_details_response.dart';
 import '../../repo/driver_repository.dart';
 import 'driver_details_state.dart';
 import 'driver_details_event.dart';
